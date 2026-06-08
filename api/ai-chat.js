@@ -12,7 +12,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing query' });
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = (process.env.GEMINI_API_KEY || '').trim();
     if (!apiKey) {
       return res.status(500).json({ error: 'Missing GEMINI_API_KEY environment variable. Please add it to Vercel.' });
     }
