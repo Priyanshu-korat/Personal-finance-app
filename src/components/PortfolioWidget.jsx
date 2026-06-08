@@ -249,7 +249,7 @@ export default function PortfolioWidget() {
       )}
 
       {investments.length === 0 && pendingOrders.length === 0 && (
-        <div className="lg-card p-6 flex flex-col items-center justify-center text-center mt-2" style={{ borderRadius: '24px', borderStyle: 'dashed' }}>
+        <div className="lg-card p-6 flex flex-col items-center justify-center text-center mt-2" style={{ borderRadius: '24px', background: 'linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01))' }}>
           <span style={{ fontSize: '48px', marginBottom: '12px' }}>📊</span>
           <h3 className="font-bold mb-2">No Investments Yet</h3>
           <p className="text-sm text-[var(--t-secondary)] mb-4">Add your stocks and mutual funds to track your net worth and live returns automatically.</p>
