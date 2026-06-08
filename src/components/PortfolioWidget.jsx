@@ -193,7 +193,7 @@ export default function PortfolioWidget() {
 
       {/* AI Insights Widgets */}
       {investments.length > 0 && (
-        <div className="grid grid-cols-2 gap-3 mt-2">
+        <div className="flex flex-col g3 mt-2">
           {/* Best Performer */}
           <div className="lg-card flex flex-col justify-between" style={{ padding: '20px', borderRadius: '24px', background: 'linear-gradient(135deg, rgba(48,209,88,0.08), rgba(48,209,88,0.01))', border: '1px solid rgba(48,209,88,0.15)' }}>
             <span className="text-xs font-bold text-[var(--c-green)] uppercase tracking-wider flex items-center gap-1 mb-2">★ Top Gainer</span>
