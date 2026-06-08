@@ -14,17 +14,27 @@ export default async function handler(req, res) {
     // Deduplicate symbols
     const uniqueSymbols = [...new Set(symbols)];
 
-    // Fetch quotes
-    // yahooFinance.quote takes an array or single symbol
-    const results = await yahooFinance.quote(uniqueSymbols);
-    
-    // results could be an array or a single object depending on input length
-    const quotes = Array.isArray(results) ? results : [results];
+    // Automatically append .NS for Indian stocks if no suffix exists
+    const formattedSymbols = uniqueSymbols.map(sym => {
+      if (!sym.includes('.')) return `${sym}.NS`;
+      return sym;
+    });
+
+    // Fetch quotes individually to prevent one bad symbol from failing the whole batch
+    const results = await Promise.allSettled(
+      formattedSymbols.map(sym => yahooFinance.quote(sym))
+    );
 
     const priceMap = {};
-    quotes.forEach(q => {
-      // For mutual funds, regularMarketPrice is often used, sometimes navPrice
-      priceMap[q.symbol] = q.regularMarketPrice || q.navPrice || 0;
+    results.forEach(res => {
+      if (res.status === 'fulfilled' && res.value) {
+        const q = res.value;
+        // Map both the raw symbol (e.g. RELIANCE.NS) and the base symbol (RELIANCE)
+        const baseSymbol = q.symbol.split('.')[0];
+        const price = q.regularMarketPrice || q.navPrice || 0;
+        priceMap[baseSymbol] = price;
+        priceMap[q.symbol] = price;
+      }
     });
 
     return res.status(200).json({ prices: priceMap });
