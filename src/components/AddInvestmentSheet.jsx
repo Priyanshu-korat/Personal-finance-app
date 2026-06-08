@@ -41,7 +41,8 @@ export default function AddInvestmentSheet({ isOpen, onClose, shellRef }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!symbol || !name) return;
+    if (!name) return;
+    const finalSymbol = symbol || name;
 
     if (entryMode === 'PAST') {
       if (!quantity || !averageBuyPrice) return;
@@ -50,7 +51,7 @@ export default function AddInvestmentSheet({ isOpen, onClose, shellRef }) {
         payload: {
           id: `inv-${Date.now()}`,
           type,
-          symbol: symbol.toUpperCase().trim(),
+          symbol: finalSymbol.toUpperCase().trim(),
           name: name.trim(),
           quantity: Number(quantity),
           averageBuyPrice: Number(averageBuyPrice),
@@ -66,7 +67,7 @@ export default function AddInvestmentSheet({ isOpen, onClose, shellRef }) {
           id: `ord-${Date.now()}`,
           investmentId: null,
           type,
-          symbol: symbol.toUpperCase().trim(),
+          symbol: finalSymbol.toUpperCase().trim(),
           name: name.trim(),
           amount: Number(amount),
           orderDate: new Date().toISOString(),
@@ -79,14 +80,14 @@ export default function AddInvestmentSheet({ isOpen, onClose, shellRef }) {
         type: 'ADD_SUBSCRIPTION',
         payload: {
           id: `sub-${Date.now()}`,
-          name: `${name} (${type === 'STOCK' ? 'Stock SIP' : 'MF SIP'})`,
+          name: `${name} (${type === 'STOCK' ? 'Stock SIP' : type === 'MF' ? 'MF SIP' : 'Bond SIP'})`,
           amount: parseFloat(amount),
           category: 'Investment',
           date: parseInt(sipDate, 10),
           frequency: 'Monthly',
           isSip: true,
           sipType: type,
-          sipSymbol: symbol.toUpperCase().trim(),
+          sipSymbol: finalSymbol.toUpperCase().trim(),
           sipName: name.trim()
         }
       });
@@ -112,9 +113,9 @@ export default function AddInvestmentSheet({ isOpen, onClose, shellRef }) {
           <button 
             type="button"
             className="btn btn-ghost fw-bold" 
-            style={{ color: (!symbol || !name) ? 'var(--t-tertiary)' : 'var(--c-blue-lt)' }}
+            style={{ color: !name ? 'var(--t-tertiary)' : 'var(--c-blue-lt)' }}
             onClick={handleSubmit}
-            disabled={!symbol || !name}
+            disabled={!name}
           >
             Save
           </button>
@@ -134,17 +135,18 @@ export default function AddInvestmentSheet({ isOpen, onClose, shellRef }) {
               <div className="segment-highlight" style={{ left: `${typePill.left}px`, width: `${typePill.width}px` }} />
               <button type="button" className={`segment ${type === 'STOCK' ? 'active' : ''}`} onClick={() => setType('STOCK')}>Stock</button>
               <button type="button" className={`segment ${type === 'MF' ? 'active' : ''}`} onClick={() => setType('MF')}>Mutual Fund</button>
+              <button type="button" className={`segment ${type === 'BOND' ? 'active' : ''}`} onClick={() => setType('BOND')}>Bond</button>
             </div>
           </div>
 
           <ul className="inset-grouped-list mb-6">
             <li>
               <div className="flex flex-col w-full py-2">
-                <span className="subhead t-primary mb-2">Search {type === 'STOCK' ? 'Stock' : 'Mutual Fund'}</span>
+                <span className="subhead t-primary mb-2">Search {type === 'STOCK' ? 'Stock' : type === 'MF' ? 'Mutual Fund' : 'Bond'}</span>
                 <AutocompleteInput 
                   className="sheet-input w-full p-0 m-0" 
                   style={{ textAlign: 'left' }}
-                  placeholder={type === 'STOCK' ? "e.g. Reliance Industries" : "e.g. Parag Parikh Flexi"}
+                  placeholder={type === 'STOCK' ? "e.g. Reliance Industries" : type === 'MF' ? "e.g. Parag Parikh Flexi" : "e.g. SGBMAY29"}
                   value={name}
                   onChange={setName}
                   onSelect={(suggestion) => {
@@ -157,7 +159,7 @@ export default function AddInvestmentSheet({ isOpen, onClose, shellRef }) {
                       setSymbol(suggestion);
                     }
                   }}
-                  suggestions={type === 'STOCK' ? STOCK_SUGGESTIONS : SIP_SUGGESTIONS}
+                  suggestions={type === 'STOCK' ? STOCK_SUGGESTIONS : type === 'MF' ? SIP_SUGGESTIONS : []}
                 />
               </div>
             </li>

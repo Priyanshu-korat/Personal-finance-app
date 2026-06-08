@@ -10,6 +10,7 @@ export default function PortfolioWidget() {
 
   const investments = state.investments || [];
   const pendingOrders = (state.investmentOrders || []).filter(o => o.status === 'PENDING');
+  const prevInvLengthRef = React.useRef(investments.length);
 
   const handleResolveOrders = async () => {
     if (pendingOrders.length === 0 || isOffline) return;
@@ -112,6 +113,14 @@ export default function PortfolioWidget() {
       setIsSyncing(false);
     }
   };
+
+  React.useEffect(() => {
+    if (investments.length > prevInvLengthRef.current) {
+      // A new investment was added! Automatically sync prices for ALL investments immediately
+      handleSync();
+    }
+    prevInvLengthRef.current = investments.length;
+  }, [investments.length]);
 
   // Calculations
   let totalInvested = 0;
