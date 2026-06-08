@@ -18,7 +18,7 @@ export default async function handler(req, res) {
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
 
     // Minimize data to avoid hitting token limits and speed up response
     const miniTxs = (transactions || []).map(t => `${t.date.split('T')[0]} | ${t.type} | ${t.category} | ${t.amount} | ${t.title || t.notes || ''}`).join('\n');
@@ -38,11 +38,23 @@ RULES:
 4. Use markdown for bolding important numbers or categories.
 5. If there is no data matching their request, tell them nicely.`;
 
-    const result = await model.generateContent({
-      contents: [
-        { role: 'user', parts: [{ text: systemPrompt + '\n\nUSER QUESTION: ' + query }] }
-      ]
-    });
+    let result;
+    try {
+      result = await model.generateContent({
+        contents: [
+          { role: 'user', parts: [{ text: systemPrompt + '\n\nUSER QUESTION: ' + query }] }
+        ]
+      });
+    } catch (modelError) {
+      // If the latest flash model throws a 404 or unsupported error, fallback to the older proven gemini-pro
+      console.warn("Primary model failed, falling back to gemini-pro", modelError);
+      const fallbackModel = genAI.getGenerativeModel({ model: "gemini-pro" });
+      result = await fallbackModel.generateContent({
+        contents: [
+          { role: 'user', parts: [{ text: systemPrompt + '\n\nUSER QUESTION: ' + query }] }
+        ]
+      });
+    }
 
     const responseText = result.response.text();
 
