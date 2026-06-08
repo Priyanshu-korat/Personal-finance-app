@@ -137,11 +137,14 @@ export default function PortfolioWidget() {
     totalInvested += invested;
     totalCurrent += current;
 
-    if (!bestPerformer || profitPct > bestPerformer.pct) {
-      bestPerformer = { ...inv, pct: profitPct, abs: profit };
-    }
-    if (!worstPerformer || profitPct < worstPerformer.pct) {
-      worstPerformer = { ...inv, pct: profitPct, abs: profit };
+    if (profitPct >= 0) {
+      if (!bestPerformer || profitPct > bestPerformer.pct) {
+        bestPerformer = { ...inv, pct: profitPct, abs: profit };
+      }
+    } else {
+      if (!worstPerformer || profitPct < worstPerformer.pct) {
+        worstPerformer = { ...inv, pct: profitPct, abs: profit };
+      }
     }
   });
 
@@ -192,21 +195,25 @@ export default function PortfolioWidget() {
       </div>
 
       {/* AI Insights Widgets */}
-      {investments.length > 0 && (
+      {(bestPerformer || worstPerformer) && (
         <div className="flex flex-col g3 mt-2">
           {/* Best Performer */}
-          <div className="lg-card flex flex-col justify-between" style={{ padding: '20px', borderRadius: '24px', background: 'linear-gradient(135deg, rgba(48,209,88,0.08), rgba(48,209,88,0.01))', border: '1px solid rgba(48,209,88,0.15)' }}>
-            <span className="text-xs font-bold text-[var(--c-green)] uppercase tracking-wider flex items-center gap-1 mb-2">★ Top Gainer</span>
-            <span className="font-bold text-sm truncate mb-1" style={{ color: 'var(--t-primary)' }}>{bestPerformer?.name || '-'}</span>
-            <span className="text-[var(--c-green)] font-bold text-xl">+{bestPerformer?.pct.toFixed(2)}%</span>
-          </div>
+          {bestPerformer && (
+            <div className="lg-card flex flex-col justify-between" style={{ padding: '20px', borderRadius: '24px', background: 'linear-gradient(135deg, rgba(48,209,88,0.08), rgba(48,209,88,0.01))', border: '1px solid rgba(48,209,88,0.15)' }}>
+              <span className="text-xs font-bold text-[var(--c-green)] uppercase tracking-wider flex items-center gap-1 mb-2">★ Top Gainer</span>
+              <span className="font-bold text-sm truncate mb-1" style={{ color: 'var(--t-primary)' }}>{bestPerformer.name || '-'}</span>
+              <span className="text-[var(--c-green)] font-bold text-xl">+{bestPerformer.pct.toFixed(2)}%</span>
+            </div>
+          )}
 
           {/* Worst Performer */}
-          <div className="lg-card flex flex-col justify-between" style={{ padding: '20px', borderRadius: '24px', background: 'linear-gradient(135deg, rgba(255,69,58,0.08), rgba(255,69,58,0.01))', border: '1px solid rgba(255,69,58,0.15)' }}>
-            <span className="text-xs font-bold text-[var(--c-red)] uppercase tracking-wider flex items-center gap-1 mb-2">▼ Top Loser</span>
-            <span className="font-bold text-sm truncate mb-1" style={{ color: 'var(--t-primary)' }}>{worstPerformer?.name || '-'}</span>
-            <span className="text-[var(--c-red)] font-bold text-xl">{worstPerformer?.pct.toFixed(2)}%</span>
-          </div>
+          {worstPerformer && (
+            <div className="lg-card flex flex-col justify-between" style={{ padding: '20px', borderRadius: '24px', background: 'linear-gradient(135deg, rgba(255,69,58,0.08), rgba(255,69,58,0.01))', border: '1px solid rgba(255,69,58,0.15)' }}>
+              <span className="text-xs font-bold text-[var(--c-red)] uppercase tracking-wider flex items-center gap-1 mb-2">▼ Top Loser</span>
+              <span className="font-bold text-sm truncate mb-1" style={{ color: 'var(--t-primary)' }}>{worstPerformer.name || '-'}</span>
+              <span className="text-[var(--c-red)] font-bold text-xl">{worstPerformer.pct.toFixed(2)}%</span>
+            </div>
+          )}
         </div>
       )}
 
