@@ -88,6 +88,13 @@ function financeReducer(state, action) {
           inv.type === 'ETF' ? { ...inv, type: 'STOCK' } : inv
         );
       }
+      if (migratedPayload.transactions) {
+        migratedPayload.transactions = migratedPayload.transactions.map(tx => 
+          (tx.type === 'Investment' && (tx.category === 'ETF' || tx.category === 'Stock')) 
+            ? { ...tx, category: 'Stock / ETF' } 
+            : tx
+        );
+      }
       
       return { ...state, ...migratedPayload };
     }

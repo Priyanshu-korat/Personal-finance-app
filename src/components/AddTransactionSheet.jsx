@@ -76,7 +76,7 @@ export default function AddTransactionSheet({ isOpen, onClose, shellRef }) {
       return expenseCats;
     }
     if (type === 'Income') return INCOME_CATEGORIES.map(c => ({ name: c, icon: '💵' }));
-    if (type === 'Investment') return [{ name: 'SIP', icon: '🔄' }, { name: 'Stock', icon: '📈' }, { name: 'ETF', icon: '🧺' }];
+    if (type === 'Investment') return [{ name: 'SIP', icon: '🔄' }, { name: 'Stock / ETF', icon: '📈' }];
     return [];
   }, [type, state.categories]);
 
@@ -104,22 +104,22 @@ export default function AddTransactionSheet({ isOpen, onClose, shellRef }) {
 
     // 2. If user is actively typing, switch to the large JSON datasets
     if (subCategory && subCategory.trim().length > 0) {
-      if (category === 'Stock') return STOCK_SUGGESTIONS;
-      if (category === 'SIP' || category === 'ETF') return SIP_SUGGESTIONS;
+      if (category === 'Stock / ETF') return STOCK_SUGGESTIONS;
+      if (category === 'SIP') return SIP_SUGGESTIONS;
     }
 
     // 3. Default: Show current investments. If none exist yet, show the JSON list so the dropdown isn't empty!
     if (uniqueExisting.length > 0) {
       return uniqueExisting;
     } else {
-      if (category === 'Stock') return STOCK_SUGGESTIONS;
-      if (category === 'SIP' || category === 'ETF') return SIP_SUGGESTIONS;
+      if (category === 'Stock / ETF') return STOCK_SUGGESTIONS;
+      if (category === 'SIP') return SIP_SUGGESTIONS;
     }
     return [];
   }, [type, category, state.transactions, subCategory]);
 
   const availableAccounts = useMemo(() => {
-    return (state.accounts || []).filter(a => a.type !== 'Investment' && a.type !== 'SIP' && a.type !== 'Stock' && a.type !== 'ETF');
+    return (state.accounts || []).filter(a => a.type !== 'Investment' && a.type !== 'SIP' && a.type !== 'Stock');
   }, [state.accounts]);
 
   const isMonthlySip = type === 'Investment' && category === 'SIP' && sipFrequency === 'Monthly';

@@ -16,7 +16,7 @@ export default function AddSubscriptionSheet({ isOpen, onClose }) {
   const availableCategories = (state.categories || []).filter(c => c.type === 'Expense');
   
   const availableAccounts = React.useMemo(() => {
-    return (state.accounts || []).filter(a => a.type !== 'Investment' && a.type !== 'SIP' && a.type !== 'Stock' && a.type !== 'ETF');
+    return (state.accounts || []).filter(a => a.type !== 'Investment' && a.type !== 'SIP' && a.type !== 'Stock');
   }, [state.accounts]);
 
   const handleSave = () => {
