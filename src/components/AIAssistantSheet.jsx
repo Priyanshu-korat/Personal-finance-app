@@ -51,7 +51,32 @@ export default function AIAssistantSheet({ isOpen, onClose, tabBarRef, shellRef 
       const data = await response.json();
       
       if (response.ok) {
-        setMessages(prev => [...prev, { role: 'ai', text: data.reply }]);
+        setMessages(prev => [...prev, { role: 'ai', text: data.text || data.reply || '' }]);
+        
+        // Auto-Log Transaction Feature!
+        if (data.transaction) {
+          // Determine the default account to log to (first Bank or Cash account)
+          const defaultAccount = state.accounts?.find(a => a.type === 'Bank' || a.type === 'Cash')?.id;
+          
+          if (defaultAccount) {
+            dispatch({
+              type: 'ADD_TRANSACTION',
+              payload: {
+                id: `tx-${Date.now()}`,
+                type: data.transaction.type || 'Expense',
+                amount: parseFloat(data.transaction.amount) || 0,
+                category: data.transaction.category || 'Other',
+                accountId: defaultAccount,
+                date: new Date().toISOString(),
+                title: data.transaction.title || 'AI Logged Expense'
+              }
+            });
+            setTimeout(() => {
+              setMessages(prev => [...prev, { role: 'ai', text: '✅ I have automatically logged this transaction to your account!' }]);
+            }, 600);
+          }
+        }
+
       } else {
         const errorMsg = data.details ? `${data.error} (${data.details})` : (data.error || 'Failed to connect');
         setMessages(prev => [...prev, { role: 'ai', text: `**Error:** ${errorMsg}` }]);

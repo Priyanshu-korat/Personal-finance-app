@@ -61,6 +61,8 @@ const initialState = {
   settlementRequests: [],
   investments: [],
   investmentOrders: [],
+  budgets: [],
+  savingsPots: [],
   /*
     Investment Schema:
     { id: 'inv-1', type: 'STOCK', symbol: 'RELIANCE.NS', name: 'Reliance Industries', quantity: 10, averageBuyPrice: 2500, currentPrice: 2600, lastUpdated: '...' }
@@ -273,6 +275,35 @@ function financeReducer(state, action) {
         ...state,
         investmentOrders: (state.investmentOrders || []).map(o =>
           o.id === orderId ? { ...o, ...updates } : o
+        )
+      };
+    }
+
+    case 'SET_BUDGET': {
+      const { category, amount } = action.payload;
+      const existing = (state.budgets || []).find(b => b.category === category);
+      if (existing) {
+        return {
+          ...state,
+          budgets: state.budgets.map(b => b.category === category ? { ...b, amount } : b)
+        };
+      } else {
+        return {
+          ...state,
+          budgets: [...(state.budgets || []), { id: `budg-${Date.now()}`, category, amount }]
+        };
+      }
+    }
+
+    case 'ADD_SAVINGS_POT':
+      return { ...state, savingsPots: [...(state.savingsPots || []), action.payload] };
+
+    case 'UPDATE_SAVINGS_POT': {
+      const { id, updates } = action.payload;
+      return {
+        ...state,
+        savingsPots: (state.savingsPots || []).map(p =>
+          p.id === id ? { ...p, ...updates } : p
         )
       };
     }

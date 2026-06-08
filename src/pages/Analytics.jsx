@@ -6,6 +6,7 @@ import TrendChart from '../components/charts/TrendChart';
 import Odometer from '../components/ui/Odometer';
 import useTilt from '../hooks/useTilt';
 import PortfolioWidget from '../components/PortfolioWidget';
+import BudgetsWidget from '../components/BudgetsWidget';
 
 const APPLE_COLORS = [
   '#ff453a', '#ff9f0a', '#ffd60a', '#32d74b', '#64d2ff', '#0a84ff', '#5e5ce6', '#bf5af2', '#ff375f'

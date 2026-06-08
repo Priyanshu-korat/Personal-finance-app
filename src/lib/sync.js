@@ -38,7 +38,9 @@ export const fetchInitialState = async (userId) => {
       { data: splitsData },
       { data: settlementsData },
       { data: investmentsData },
-      { data: ordersData }
+      { data: ordersData },
+      { data: budgetsData },
+      { data: potsData }
     ] = await Promise.all([
       supabase.from('accounts').select('*').eq('user_id', userId),
       supabase.from('categories').select('*').eq('user_id', userId),
@@ -50,7 +52,9 @@ export const fetchInitialState = async (userId) => {
       supabase.from('shared_splits').select('*').or(`creator_id.eq.${userId},paid_by.eq.${userId},involved_profiles.cs.[{"userId":"${userId}"}]`).order('date', { ascending: false }),
       supabase.from('settlement_requests').select('*').or(`initiator_id.eq.${userId},receiver_phone.eq.${profileData?.phone || 'none'}`).eq('status', 'pending'),
       supabase.from('investments').select('*').eq('user_id', userId),
-      supabase.from('investment_orders').select('*').eq('user_id', userId).order('order_date', { ascending: false })
+      supabase.from('investment_orders').select('*').eq('user_id', userId).order('order_date', { ascending: false }),
+      supabase.from('budgets').select('*').eq('user_id', userId),
+      supabase.from('savings_pots').select('*').eq('user_id', userId)
     ]);
 
     return {
@@ -70,7 +74,9 @@ export const fetchInitialState = async (userId) => {
       sharedSplits: (splitsData || []).map(toCamel),
       settlementRequests: (settlementsData || []).map(toCamel),
       investments: (investmentsData || []).map(toCamel),
-      investmentOrders: (ordersData || []).map(toCamel)
+      investmentOrders: (ordersData || []).map(toCamel),
+      budgets: (budgetsData || []).map(toCamel),
+      savingsPots: (potsData || []).map(toCamel)
     };
   } catch (err) {
     console.error('Error fetching initial state:', err);
@@ -296,6 +302,29 @@ export const syncActionToSupabase = async (action, userId) => {
       case 'SETTLE_INVESTMENT_ORDER': {
         const { orderId, updates } = action.payload;
         await supabase.from('investment_orders').update(toSnake(updates)).eq('id', orderId).eq('user_id', userId).then(handleSupabaseResponse);
+        break;
+      }
+
+      case 'SET_BUDGET': {
+        const { category, amount } = action.payload;
+        // Upsert logic for budget
+        const { data: existing } = await supabase.from('budgets').select('id').eq('user_id', userId).eq('category', category).single();
+        if (existing) {
+          await supabase.from('budgets').update({ amount }).eq('id', existing.id).then(handleSupabaseResponse);
+        } else {
+          await supabase.from('budgets').insert({ category, amount, user_id: userId }).then(handleSupabaseResponse);
+        }
+        break;
+      }
+
+      case 'ADD_SAVINGS_POT': {
+        await supabase.from('savings_pots').insert({ ...toSnake(action.payload), user_id: userId }).then(handleSupabaseResponse);
+        break;
+      }
+
+      case 'UPDATE_SAVINGS_POT': {
+        const { id, updates } = action.payload;
+        await supabase.from('savings_pots').update(toSnake(updates)).eq('id', id).eq('user_id', userId).then(handleSupabaseResponse);
         break;
       }
     }

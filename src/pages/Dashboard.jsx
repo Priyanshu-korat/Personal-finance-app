@@ -1,7 +1,11 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import { supabase } from '../lib/supabase';
+import SetupWizard from '../components/SetupWizard';
+import LiquidSelect from '../components/LiquidSelect';
+import SavingsPotsWidget from '../components/SavingsPotsWidget';
+import HealthScoreWidget from '../components/HealthScoreWidget';
 import { useFinance } from '../context/FinanceContext';
 import AddSubscriptionSheet from '../components/AddSubscriptionSheet';
-import LiquidSelect from '../components/LiquidSelect';
 import PulseLine from '../components/charts/PulseLine';
 
 // ============================================
@@ -821,6 +825,10 @@ export default function Dashboard() {
           Overview
         </h2>
       </div>
+
+      <HealthScoreWidget />
+
+      <SavingsPotsWidget />
 
       {/* ── ACTION REQUIRED (SIP, SUBSCRIPTIONS & CARD BILLS) ── */}
       {(pendingSips.length > 0 || pendingSubscriptions.length > 0 || pendingCardBills.length > 0) && (

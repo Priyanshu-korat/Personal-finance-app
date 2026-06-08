@@ -77,74 +77,156 @@ export default function AddInvestmentSheet({ isOpen, onClose, shellRef }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center anim-fade-in" style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(10px)' }} onClick={onClose}>
-      <div className="w-full max-w-lg bg-[var(--bg-primary)] sm:rounded-[32px] rounded-t-[32px] p-6 anim-slide-up" style={{ border: '1px solid var(--lg-border)' }} onClick={e => e.stopPropagation()}>
+    <div className="sheet-overlay anim-fade-in" onClick={onClose}>
+      <div className="sheet-modal lg lg-r-xl anim-morph-up" onClick={(e) => e.stopPropagation()}>
+        <div className="sheet-handle" />
         
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="title-medium">Add Investment</h2>
-          <button className="btn btn-icon" onClick={onClose} style={{ background: 'var(--lg-fill)', borderRadius: '50%' }}>✕</button>
+        <div className="sheet-header">
+          <button type="button" className="btn btn-ghost" onClick={onClose}>Cancel</button>
+          <h3 className="headline">Add Investment</h3>
+          <button 
+            type="button"
+            className="btn btn-ghost fw-bold" 
+            style={{ color: (!symbol || !name) ? 'var(--t-tertiary)' : 'var(--c-blue-lt)' }}
+            onClick={handleSubmit}
+            disabled={!symbol || !name}
+          >
+            Save
+          </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-          {/* Entry Mode Toggle */}
-          <div className="flex gap-2 p-1" style={{ background: 'var(--lg-fill)', borderRadius: '16px' }}>
-            <button type="button" className={`flex-1 py-2 text-xs sm:text-sm font-bold rounded-[12px] transition-all ${entryMode === 'PAST' ? 'bg-[var(--lg-border)] text-[var(--t-primary)] shadow-sm' : 'text-[var(--t-secondary)]'}`} onClick={() => setEntryMode('PAST')}>Past Holding</button>
-            <button type="button" className={`flex-1 py-2 text-xs sm:text-sm font-bold rounded-[12px] transition-all ${entryMode === 'NEW' ? 'bg-[var(--lg-border)] text-[var(--t-primary)] shadow-sm' : 'text-[var(--t-secondary)]'}`} onClick={() => setEntryMode('NEW')}>One-Time Today</button>
-            <button type="button" className={`flex-1 py-2 text-xs sm:text-sm font-bold rounded-[12px] transition-all ${entryMode === 'SIP' ? 'bg-[var(--lg-border)] text-[var(--t-primary)] shadow-sm' : 'text-[var(--t-secondary)]'}`} onClick={() => setEntryMode('SIP')}>Monthly SIP</button>
-          </div>
-
-          {/* Type Toggle */}
-          <div className="flex gap-2 p-1" style={{ background: 'var(--lg-fill)', borderRadius: '16px' }}>
-            <button type="button" className={`flex-1 py-2 text-sm font-bold rounded-[12px] transition-all ${type === 'STOCK' ? 'bg-[var(--c-blue)] text-white shadow-lg' : 'text-[var(--t-secondary)]'}`} onClick={() => setType('STOCK')}>Stock</button>
-            <button type="button" className={`flex-1 py-2 text-sm font-bold rounded-[12px] transition-all ${type === 'MF' ? 'bg-[var(--c-green)] text-white shadow-lg' : 'text-[var(--t-secondary)]'}`} onClick={() => setType('MF')}>Mutual Fund</button>
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-bold text-[var(--t-secondary)] uppercase tracking-wider">Symbol (Yahoo Finance format)</label>
-            <input type="text" value={symbol} onChange={e => setSymbol(e.target.value)} placeholder={type === 'STOCK' ? "e.g. RELIANCE.NS" : "e.g. 0P00005WLZ.BO"} className="lg-input" required />
-            <span className="text-xs text-[var(--t-tertiary)] mt-1">For Indian stocks, append .NS (NSE) or .BO (BSE).</span>
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-bold text-[var(--t-secondary)] uppercase tracking-wider">Name</label>
-            <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder={type === 'STOCK' ? "Reliance Industries" : "Parag Parikh Flexi Cap"} className="lg-input" required />
-          </div>
-
-          {entryMode === 'PAST' ? (
-            <div className="flex gap-4">
-              <div className="flex flex-col gap-1 flex-1">
-                <label className="text-xs font-bold text-[var(--t-secondary)] uppercase tracking-wider">{type === 'STOCK' ? 'Current Total Shares' : 'Current Total Units'}</label>
-                <input type="number" step="any" value={quantity} onChange={e => setQuantity(e.target.value)} placeholder="0.00" className="lg-input" required />
-              </div>
-              <div className="flex flex-col gap-1 flex-1">
-                <label className="text-xs font-bold text-[var(--t-secondary)] uppercase tracking-wider">{type === 'STOCK' ? 'Average Buy Price' : 'Average NAV'}</label>
-                <input type="number" step="any" value={averageBuyPrice} onChange={e => setAverageBuyPrice(e.target.value)} placeholder="₹0.00" className="lg-input" required />
-              </div>
+        <div className="sheet-content">
+          {/* Top Segmented Controls */}
+          <div className="px-4 mb-4 flex flex-col gap-3">
+            <div className="flex bg-[var(--glass-surface)] rounded-2xl p-1 shadow-sm border border-[var(--glass-border)]">
+              <button type="button" className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${entryMode === 'PAST' ? 'bg-[var(--glass-accent)] text-[var(--t-primary)] shadow-sm' : 'text-[var(--t-secondary)]'}`} onClick={() => setEntryMode('PAST')}>Past Holding</button>
+              <button type="button" className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${entryMode === 'NEW' ? 'bg-[var(--glass-accent)] text-[var(--t-primary)] shadow-sm' : 'text-[var(--t-secondary)]'}`} onClick={() => setEntryMode('NEW')}>One-Time Today</button>
+              <button type="button" className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${entryMode === 'SIP' ? 'bg-[var(--glass-accent)] text-[var(--t-primary)] shadow-sm' : 'text-[var(--t-secondary)]'}`} onClick={() => setEntryMode('SIP')}>Monthly SIP</button>
             </div>
-          ) : entryMode === 'NEW' ? (
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-bold text-[var(--t-secondary)] uppercase tracking-wider">Invested Amount</label>
-              <input type="number" step="any" value={amount} onChange={e => setAmount(e.target.value)} placeholder="₹0.00" className="lg-input" required />
-              <span className="text-xs text-[var(--c-orange)] mt-1">This will be marked as "Pending". The app will auto-fetch the units in 1-3 days when the order settles.</span>
+
+            <div className="flex bg-[var(--glass-surface)] rounded-2xl p-1 shadow-sm border border-[var(--glass-border)]">
+              <button type="button" className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${type === 'STOCK' ? 'bg-[var(--c-blue)] text-white shadow-md' : 'text-[var(--t-secondary)]'}`} onClick={() => setType('STOCK')}>Stock</button>
+              <button type="button" className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${type === 'MF' ? 'bg-[var(--c-green)] text-white shadow-md' : 'text-[var(--t-secondary)]'}`} onClick={() => setType('MF')}>Mutual Fund</button>
             </div>
-          ) : (
-            <div className="flex gap-4">
-              <div className="flex flex-col gap-1 flex-1">
-                <label className="text-xs font-bold text-[var(--t-secondary)] uppercase tracking-wider">Monthly Amount</label>
-                <input type="number" step="any" value={amount} onChange={e => setAmount(e.target.value)} placeholder="₹0.00" className="lg-input" required />
+          </div>
+
+          <ul className="inset-grouped-list mb-6">
+            <li>
+              <div className="flex items-center justify-between w-full">
+                <span className="subhead t-primary">Symbol</span>
+                <input 
+                  type="text" 
+                  className="sheet-input" 
+                  placeholder={type === 'STOCK' ? "e.g. RELIANCE.NS" : "e.g. 0P00005WLZ.BO"}
+                  dir="rtl"
+                  value={symbol}
+                  onChange={(e) => setSymbol(e.target.value)}
+                />
               </div>
-              <div className="flex flex-col gap-1 flex-1">
-                <label className="text-xs font-bold text-[var(--t-secondary)] uppercase tracking-wider">SIP Date</label>
-                <input type="number" min="1" max="31" value={sipDate} onChange={e => setSipDate(e.target.value)} placeholder="1-31" className="lg-input" required />
+            </li>
+            <li>
+              <div className="flex items-center justify-between w-full">
+                <span className="subhead t-primary">Name</span>
+                <input 
+                  type="text" 
+                  className="sheet-input" 
+                  placeholder={type === 'STOCK' ? "Reliance Industries" : "Parag Parikh Flexi"}
+                  dir="rtl"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
               </div>
-            </div>
+            </li>
+
+            {entryMode === 'PAST' ? (
+              <>
+                <li>
+                  <div className="flex items-center justify-between w-full">
+                    <span className="subhead t-primary">{type === 'STOCK' ? 'Total Shares' : 'Total Units'}</span>
+                    <input 
+                      type="number" step="any"
+                      className="sheet-input" 
+                      placeholder="0.00" 
+                      dir="rtl"
+                      value={quantity}
+                      onChange={(e) => setQuantity(e.target.value)}
+                    />
+                  </div>
+                </li>
+                <li>
+                  <div className="flex items-center justify-between w-full">
+                    <span className="subhead t-primary">{type === 'STOCK' ? 'Average Buy Price' : 'Average NAV'}</span>
+                    <input 
+                      type="number" step="any"
+                      className="sheet-input" 
+                      placeholder="₹0.00" 
+                      dir="rtl"
+                      value={averageBuyPrice}
+                      onChange={(e) => setAverageBuyPrice(e.target.value)}
+                    />
+                  </div>
+                </li>
+              </>
+            ) : entryMode === 'NEW' ? (
+              <>
+                <li>
+                  <div className="flex items-center justify-between w-full">
+                    <span className="subhead t-primary">Invested Amount</span>
+                    <input 
+                      type="number" step="any"
+                      className="sheet-input" 
+                      placeholder="₹0.00" 
+                      dir="rtl"
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                    />
+                  </div>
+                </li>
+              </>
+            ) : (
+              <>
+                <li>
+                  <div className="flex items-center justify-between w-full">
+                    <span className="subhead t-primary">Monthly Amount</span>
+                    <input 
+                      type="number" step="any"
+                      className="sheet-input" 
+                      placeholder="₹0.00" 
+                      dir="rtl"
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                    />
+                  </div>
+                </li>
+                <li>
+                  <div className="flex items-center justify-between w-full">
+                    <span className="subhead t-primary">SIP Date</span>
+                    <input 
+                      type="number" min="1" max="31"
+                      className="sheet-input" 
+                      placeholder="e.g. 5" 
+                      dir="rtl"
+                      value={sipDate}
+                      onChange={(e) => setSipDate(e.target.value)}
+                    />
+                  </div>
+                </li>
+              </>
+            )}
+          </ul>
+          
+          {entryMode === 'NEW' && (
+            <p className="caption px-4 text-center text-[var(--c-orange)] opacity-80 mb-6">
+              This order will be marked as "Pending". The app will auto-fetch your exact units in 1-3 days when the NAV settles.
+            </p>
           )}
 
-          <button type="submit" className="btn btn-primary mt-4" style={{ height: '56px', fontSize: '18px', borderRadius: '16px', background: 'linear-gradient(135deg, var(--c-blue), var(--c-purple))' }}>
-            {entryMode === 'PAST' ? `Save ${type === 'STOCK' ? 'Stock' : 'Mutual Fund'}` : entryMode === 'NEW' ? 'Place Order' : 'Start SIP Auto-Tracker'}
-          </button>
-        </form>
-
+          {entryMode === 'SIP' && (
+            <p className="caption px-4 text-center text-[var(--c-blue)] opacity-80 mb-6">
+              The app will automatically remind you on this date every month and handle all pending NAVs!
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -20,56 +20,52 @@ export default async function handler(req, res) {
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
 
-    // Minimize data to avoid hitting token limits and speed up response
-    const miniTxs = (transactions || []).map(t => `${t.date.split('T')[0]} | ${t.type} | ${t.category} | ${t.amount} | ${t.title || t.notes || ''}`).join('\n');
-    const miniInvs = (investments || []).map(i => `${i.type} | ${i.name} (${i.symbol}) | Qty: ${i.quantity} | AvgBuy: ${i.averageBuyPrice} | Current: ${i.currentPrice}`).join('\n');
+    const systemPrompt = `You are an elite, highly intelligent financial advisor AI.
+Your user's name is ${profile?.name || 'User'}.
+
+The user's transaction history is provided below. Analyze it mathematically when asked.
+${JSON.stringify(transactions || [])}
+
+The user's live investment portfolio is provided below:
+${JSON.stringify(investments || [])}
+
+CRITICAL: If the user says something like "I bought coffee for 150" or "Got my salary of 50000", they are asking you to LOG A TRANSACTION.
+When logging a transaction, you MUST respond in this exact JSON format:
+\`\`\`json
+{
+  "text": "Got it! I've logged your coffee expense.",
+  "transaction": {
+    "type": "Expense", // or "Income"
+    "amount": 150,
+    "category": "Food & Dining",
+    "title": "Coffee"
+  }
+}
+\`\`\`
+If it is just a normal question, respond with:
+\`\`\`json
+{
+  "text": "Your normal markdown response here."
+}
+\`\`\`
+You MUST ALWAYS return valid JSON. Do not return plain text.`;
+
+    const result = await model.generateContent(systemPrompt + '\n\nUSER QUESTION: ' + query);
+    const response = await result.response;
+    let text = response.text();
     
-    const systemPrompt = `You are an expert, highly intelligent Personal Finance and Wealth Management AI Assistant embedded inside a sleek finance app. 
-Your job is to analyze the user's financial data and answer their questions in a friendly, concise, and accurate manner.
-If they misspell words, figure out what they mean.
-
-USER'S DATA:
---- TRANSACTIONS ---
-(Date | Type | Category | Amount | Notes):
-${miniTxs}
-
---- INVESTMENTS (Stocks & SIPs) ---
-(Type | Name | Qty | AvgBuy | Current Price):
-${miniInvs}
-
-RULES:
-1. Be extremely concise. Keep answers to 1-3 short sentences.
-2. Format numbers nicely with ₹ (Indian Rupees).
-3. If they ask about their investments, calculate their profit/loss and suggest which are performing best/worst.
-4. Use markdown for bolding important numbers or categories.
-5. If there is no data matching their request, tell them nicely.`;
-
-    // The API key is valid but older models like 1.5 were deprecated. 
-    // We use the universally available alias: gemini-flash-latest
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
+    // Clean up markdown block if present
+    text = text.replace(/^\`\`\`json/m, '').replace(/\`\`\`$/m, '').trim();
     
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [
-          { role: 'user', parts: [{ text: systemPrompt + '\n\nUSER QUESTION: ' + query }] }
-        ]
-      })
-    });
-
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error("Gemini API Error:", errText);
-      throw new Error(`API Error ${response.status}: ${errText}`);
+    let parsed;
+    try {
+      parsed = JSON.parse(text);
+    } catch (e) {
+      // Fallback if AI didn't return JSON
+      parsed = { text };
     }
 
-    const data = await response.json();
-    const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || "I couldn't generate a response.";
-
-    return res.status(200).json({ reply: responseText });
+    return res.status(200).json(parsed);
   } catch (error) {
     console.error('AI Chat Error:', error);
     return res.status(500).json({ error: 'Failed to communicate with AI', details: String(error) });
