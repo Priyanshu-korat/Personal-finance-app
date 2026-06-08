@@ -52,7 +52,8 @@ export default function AIAssistantSheet({ isOpen, onClose, tabBarRef, shellRef 
       if (response.ok) {
         setMessages(prev => [...prev, { role: 'ai', text: data.reply }]);
       } else {
-        setMessages(prev => [...prev, { role: 'ai', text: `**Error:** ${data.error || 'Failed to connect'}` }]);
+        const errorMsg = data.details ? `${data.error} (${data.details})` : (data.error || 'Failed to connect');
+        setMessages(prev => [...prev, { role: 'ai', text: `**Error:** ${errorMsg}` }]);
       }
     } catch (err) {
       setMessages(prev => [...prev, { role: 'ai', text: `**Error:** Network request failed. Make sure you are online.` }]);
