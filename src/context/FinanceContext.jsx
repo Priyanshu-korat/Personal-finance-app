@@ -426,8 +426,8 @@ export function FinanceProvider({ children }) {
             processedCount++;
           } else {
             action._retries = (action._retries || 0) + 1;
-            if (action._retries > 3) {
-              console.warn("Dropping failed action after 3 retries:", action);
+            if (action._retries > 50) {
+              console.warn("Dropping failed action after 50 retries:", action);
               processedCount++;
             } else {
               requiresRetry = true;
