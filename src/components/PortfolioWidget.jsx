@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { useFinance } from '../context/FinanceContext';
 import AddInvestmentSheet from './AddInvestmentSheet';
+import SettleInvestmentSheet from './SettleInvestmentSheet';
 
 export default function PortfolioWidget() {
   const { state, dispatch, isOffline } = useFinance();
-  const [isAddOpen, setIsAddOpen] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
+  const [settlingInvestment, setSettlingInvestment] = useState(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isResolving, setIsResolving] = useState(false);
 
@@ -164,7 +166,7 @@ export default function PortfolioWidget() {
           <button className="btn btn-icon" onClick={handleSync} disabled={isSyncing || isOffline || investments.length === 0} style={{ background: 'var(--lg-fill)', borderRadius: '50%' }}>
             {isSyncing ? '⌛' : '🔄'}
           </button>
-          <button className="btn btn-primary" onClick={() => setIsAddOpen(true)} style={{ borderRadius: '20px', padding: '0 16px', height: '36px', fontSize: '14px' }}>
+          <button className="btn btn-primary" onClick={() => setIsAdding(true)} style={{ borderRadius: '20px', padding: '0 16px', height: '36px', fontSize: '14px' }}>
             + Add
           </button>
         </div>
@@ -229,21 +231,45 @@ export default function PortfolioWidget() {
             const isPositive = profit >= 0;
 
             return (
-              <div key={inv.id} className="lg-card p-4 flex justify-between items-center" style={{ borderRadius: '20px' }}>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg shrink-0" style={{ background: inv.type === 'STOCK' ? 'rgba(10,132,255,0.1)' : 'rgba(48,209,88,0.1)', color: inv.type === 'STOCK' ? 'var(--c-blue)' : 'var(--c-green)' }}>
-                    {inv.type === 'STOCK' ? 'S' : 'M'}
+              <div key={inv.id} className="lg-card p-4 flex flex-col gap-3" style={{ borderRadius: '20px' }}>
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg shrink-0" style={{ background: inv.type === 'STOCK' ? 'rgba(10,132,255,0.1)' : 'rgba(48,209,88,0.1)', color: inv.type === 'STOCK' ? 'var(--c-blue)' : 'var(--c-green)' }}>
+                      {inv.type === 'STOCK' ? 'S' : 'M'}
+                    </div>
+                    <div className="flex flex-col truncate">
+                      <span className="font-bold truncate text-[var(--t-primary)]">{inv.name}</span>
+                      <span className="text-xs t-tertiary">{inv.symbol} • {inv.quantity} shares</span>
+                    </div>
                   </div>
-                  <div className="flex flex-col truncate">
-                    <span className="font-bold truncate" style={{ maxWidth: '140px' }}>{inv.name}</span>
-                    <span className="text-xs text-[var(--t-secondary)] uppercase">{inv.symbol} • {inv.quantity} {inv.type === 'STOCK' ? 'shares' : 'units'}</span>
+                  <div className="flex flex-col items-end shrink-0">
+                    <span className="font-bold">₹{current.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                    <span className="text-xs font-bold" style={{ color: isPositive ? 'var(--c-green)' : 'var(--c-red)' }}>
+                      {isPositive ? '+' : ''}₹{Math.abs(profit).toLocaleString('en-IN', { maximumFractionDigits: 0 })} ({isPositive ? '+' : ''}{profitPct.toFixed(1)}%)
+                    </span>
                   </div>
                 </div>
-                <div className="flex flex-col items-end shrink-0">
-                  <span className="font-bold">₹{current.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
-                  <span className={`text-xs font-bold ${isPositive ? 'text-[var(--c-green)]' : 'text-[var(--c-red)]'}`}>
-                    {isPositive ? '+' : ''}₹{Math.abs(profit).toLocaleString('en-IN', { maximumFractionDigits: 0 })} ({isPositive ? '+' : ''}{profitPct.toFixed(1)}%)
-                  </span>
+                
+                {/* Actions */}
+                <div className="flex gap-2 justify-end mt-1 pt-3" style={{ borderTop: '1px solid var(--border-light)' }}>
+                  <button 
+                    className="btn btn-ghost text-xs" 
+                    style={{ color: 'var(--c-red-lt)', padding: '4px 12px', minHeight: '32px' }}
+                    onClick={() => {
+                      if (confirm(`Are you sure you want to delete ${inv.symbol} without settling? This cannot be undone.`)) {
+                        dispatch({ type: 'DELETE_INVESTMENT', payload: inv.id });
+                      }
+                    }}
+                  >
+                    Delete
+                  </button>
+                  <button 
+                    className="btn btn-primary text-xs"
+                    style={{ padding: '4px 16px', minHeight: '32px', borderRadius: '16px' }}
+                    onClick={() => setSettlingInvestment(inv)}
+                  >
+                    Settle
+                  </button>
                 </div>
               </div>
             );
@@ -256,7 +282,7 @@ export default function PortfolioWidget() {
           <span style={{ fontSize: '48px', marginBottom: '12px' }}>📊</span>
           <h3 className="font-bold mb-2">No Investments Yet</h3>
           <p className="text-sm text-[var(--t-secondary)] mb-4">Add your stocks and mutual funds to track your net worth and live returns automatically.</p>
-          <button className="btn btn-primary" onClick={() => setIsAddOpen(true)} style={{ borderRadius: '20px', padding: '0 24px', height: '40px' }}>
+          <button className="btn btn-primary" onClick={() => setIsAdding(true)} style={{ borderRadius: '20px', padding: '0 24px', height: '40px' }}>
             Add Your First Asset
           </button>
         </div>
@@ -294,7 +320,14 @@ export default function PortfolioWidget() {
         </div>
       )}
 
-      <AddInvestmentSheet isOpen={isAddOpen} onClose={() => setIsAddOpen(false)} />
+      {/* Sheets */}
+      {isAdding && <AddInvestmentSheet onClose={() => setIsAdding(false)} />}
+      {settlingInvestment && (
+        <SettleInvestmentSheet 
+          investment={settlingInvestment} 
+          onClose={() => setSettlingInvestment(null)} 
+        />
+      )}
     </div>
   );
 }

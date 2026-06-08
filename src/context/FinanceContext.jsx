@@ -138,6 +138,12 @@ function financeReducer(state, action) {
     case 'ADD_SUBSCRIPTION':
       return { ...state, subscriptions: [...state.subscriptions, action.payload] };
 
+    case 'DELETE_INVESTMENT':
+      return {
+        ...state,
+        investments: (state.investments || []).filter(inv => inv.id !== action.payload)
+      };
+
     case 'PROCESS_SUBSCRIPTION': {
       const { subId, monthYear, transaction } = action.payload;
       return {
