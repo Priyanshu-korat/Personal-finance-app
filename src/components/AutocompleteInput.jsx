@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-export default function AutocompleteInput({ value, onChange, suggestions, placeholder, className, ...props }) {
+export default function AutocompleteInput({ value, onChange, onSelect, suggestions, placeholder, className, ...props }) {
   const [isOpen, setIsOpen] = useState(false);
   const wrapperRef = useRef(null);
 
@@ -85,6 +85,9 @@ export default function AutocompleteInput({ value, onChange, suggestions, placeh
                 onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                 onClick={() => {
                   onChange(displayName);
+                  if (onSelect) {
+                    onSelect(suggestion);
+                  }
                   setIsOpen(false);
                 }}
               >

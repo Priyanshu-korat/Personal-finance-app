@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useFinance } from '../context/FinanceContext';
+import AutocompleteInput from './AutocompleteInput';
+import STOCK_SUGGESTIONS from '../data/stocks.json';
+import SIP_SUGGESTIONS from '../data/sips.json';
 
 export default function AddInvestmentSheet({ isOpen, onClose, shellRef }) {
   const { dispatch } = useFinance();
@@ -136,28 +139,25 @@ export default function AddInvestmentSheet({ isOpen, onClose, shellRef }) {
 
           <ul className="inset-grouped-list mb-6">
             <li>
-              <div className="flex items-center justify-between w-full">
-                <span className="subhead t-primary">Symbol</span>
-                <input 
-                  type="text" 
-                  className="sheet-input" 
-                  placeholder={type === 'STOCK' ? "e.g. RELIANCE.NS" : "e.g. 0P00005WLZ.BO"}
-                  dir="rtl"
-                  value={symbol}
-                  onChange={(e) => setSymbol(e.target.value)}
-                />
-              </div>
-            </li>
-            <li>
-              <div className="flex items-center justify-between w-full">
-                <span className="subhead t-primary">Name</span>
-                <input 
-                  type="text" 
-                  className="sheet-input" 
-                  placeholder={type === 'STOCK' ? "Reliance Industries" : "Parag Parikh Flexi"}
-                  dir="rtl"
+              <div className="flex flex-col w-full py-2">
+                <span className="subhead t-primary mb-2">Search {type === 'STOCK' ? 'Stock' : 'Mutual Fund'}</span>
+                <AutocompleteInput 
+                  className="sheet-input w-full p-0 m-0" 
+                  style={{ textAlign: 'left' }}
+                  placeholder={type === 'STOCK' ? "e.g. Reliance Industries" : "e.g. Parag Parikh Flexi"}
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={setName}
+                  onSelect={(suggestion) => {
+                    const isObj = typeof suggestion === 'object';
+                    if (isObj) {
+                      setName(suggestion.name);
+                      setSymbol(suggestion.symbol || suggestion.name);
+                    } else {
+                      setName(suggestion);
+                      setSymbol(suggestion);
+                    }
+                  }}
+                  suggestions={type === 'STOCK' ? STOCK_SUGGESTIONS : SIP_SUGGESTIONS}
                 />
               </div>
             </li>
