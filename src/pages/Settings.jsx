@@ -431,11 +431,7 @@ export default function Settings({ toggleTheme, onBack }) {
                 </div>
               ) : ((view === 'add_account' || view === 'add_contact') && accType === 'Stock') ? (
                 <div style={{ width: '60%' }}>
-                  <LiquidCombobox value={accName} onChange={setAccName} options={metadataOptions.stocks_india || []} placeholder="Search Stock..." />
-                </div>
-              ) : ((view === 'add_account' || view === 'add_contact') && accType === 'ETF') ? (
-                <div style={{ width: '60%' }}>
-                  <LiquidCombobox value={accName} onChange={setAccName} options={metadataOptions.etfs_india || []} placeholder="Search ETF..." />
+                  <LiquidCombobox value={accName} onChange={setAccName} options={metadataOptions.stocks_india || []} placeholder="Search Stock/ETF..." />
                 </div>
               ) : ((view === 'add_account' || view === 'add_contact') && accType === 'SIP') ? (
                 <div style={{ width: '60%' }}>

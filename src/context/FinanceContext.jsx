@@ -74,8 +74,23 @@ const initialState = {
 // ============================================
 function financeReducer(state, action) {
   switch (action.type) {
-    case 'HYDRATE':
-      return { ...state, ...action.payload };
+    case 'HYDRATE': {
+      const migratedPayload = { ...action.payload };
+      
+      // Migrate legacy ETF data to Stock
+      if (migratedPayload.accounts) {
+        migratedPayload.accounts = migratedPayload.accounts.map(a => 
+          a.type === 'ETF' ? { ...a, type: 'Stock' } : a
+        );
+      }
+      if (migratedPayload.investments) {
+        migratedPayload.investments = migratedPayload.investments.map(inv => 
+          inv.type === 'ETF' ? { ...inv, type: 'STOCK' } : inv
+        );
+      }
+      
+      return { ...state, ...migratedPayload };
+    }
 
     case 'COMPLETE_SETUP':
       return {

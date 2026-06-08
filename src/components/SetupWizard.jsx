@@ -78,7 +78,7 @@ export default function SetupWizard() {
     
     // Dispatch accounts if any
     accounts.forEach(acc => {
-      if (acc.type === 'Stock' || acc.type === 'ETF' || acc.type === 'SIP') {
+      if (acc.type === 'Stock' || acc.type === 'SIP') {
         // Dispatch as Investment
         const invType = acc.type === 'SIP' ? 'MF' : 'STOCK';
         dispatch({
@@ -139,7 +139,7 @@ export default function SetupWizard() {
       accountPayload.limit = parseFloat(newCardLimit) || 0;
       accountPayload.spent = parseFloat(newCardSpent) || 0;
       accountPayload.billingDate = parseInt(newCardBillingDate) || 1;
-    } else if (accFormType === 'SIP' || accFormType === 'Stock' || accFormType === 'ETF') {
+    } else if (accFormType === 'SIP' || accFormType === 'Stock') {
       accountPayload.invQuantity = parseFloat(invQuantity) || 0;
       accountPayload.invAvgPrice = parseFloat(invAvgPrice) || 0;
       accountPayload.balance = (parseFloat(invQuantity) || 0) * (parseFloat(invAvgPrice) || 0); // For display in UI
@@ -178,7 +178,7 @@ export default function SetupWizard() {
       setNewCardSpent(acc.spent || '');
       setNewCardBillingDate(acc.billingDate ? acc.billingDate.toString() : '1');
     }
-    if (acc.type === 'SIP' || acc.type === 'Stock' || acc.type === 'ETF') {
+    if (acc.type === 'SIP' || acc.type === 'Stock') {
       setInvQuantity(acc.invQuantity || '');
       setInvAvgPrice(acc.invAvgPrice || '');
       setIsActiveSIP(acc.isActiveSIP || false);
@@ -525,7 +525,7 @@ export default function SetupWizard() {
             <p className="t-secondary mt-1 mb-6">Add your starting bank balances.</p>
             
             <div className="flex flex-col gap-2 mb-6 max-h-[200px] overflow-y-auto" style={{ margin: '0 -var(--s4)', padding: '0 var(--s4)' }}>
-              {accounts.filter(a => a.type !== 'Investment' && a.type !== 'Stock' && a.type !== 'SIP' && a.type !== 'ETF').map(acc => (
+              {accounts.filter(a => a.type !== 'Investment' && a.type !== 'Stock' && a.type !== 'SIP').map(acc => (
                 <div 
                   key={acc.id} 
                   className={`lg lg-p-sm lg-r-md flex justify-between items-center ${accFormType ? 'opacity-50' : 'lg-interactive cursor-pointer'}`}
@@ -669,7 +669,7 @@ export default function SetupWizard() {
             <p className="t-secondary mt-1 mb-6">Add your Stock or Mutual Fund buckets.</p>
             
             <div className="flex flex-col gap-2 mb-6 max-h-[200px] overflow-y-auto" style={{ margin: '0 -var(--s4)', padding: '0 var(--s4)' }}>
-              {accounts.filter(a => a.type === 'Stock' || a.type === 'SIP' || a.type === 'ETF').map(acc => (
+              {accounts.filter(a => a.type === 'Stock' || a.type === 'SIP').map(acc => (
                 <div 
                   key={acc.id} 
                   className={`lg lg-p-sm lg-r-md flex justify-between items-center ${accFormType ? 'opacity-50' : 'lg-interactive cursor-pointer'}`}
@@ -682,7 +682,7 @@ export default function SetupWizard() {
                     {acc.type === 'SIP' && acc.isActiveSIP && (
                       <div className="caption t-tertiary ml-2 mt-1">Active: ₹{acc.sipAmount}/mo on day {acc.sipDate}</div>
                     )}
-                    {(acc.type === 'Stock' || acc.type === 'ETF') && acc.isActiveSIP && (
+                    {(acc.type === 'Stock') && acc.isActiveSIP && (
                       <div className="caption t-tertiary ml-2 mt-1">Active: {acc.sipQuantity} units/mo on day {acc.sipDate}</div>
                     )}
                   </div>
@@ -702,17 +702,16 @@ export default function SetupWizard() {
                   </div>
                 </div>
               ))}
-              {accounts.filter(a => a.type === 'Stock' || a.type === 'SIP' || a.type === 'ETF').length === 0 && (
+              {accounts.filter(a => a.type === 'Stock' || a.type === 'SIP').length === 0 && (
                 <div className="t-tertiary text-center py-4 caption">No investments added yet.</div>
               )}
             </div>
 
             <div className="flex flex-col gap-3">
-              {!accFormType || (accFormType !== 'Stock' && accFormType !== 'SIP' && accFormType !== 'ETF') ? (
+              {!accFormType || (accFormType !== 'Stock' && accFormType !== 'SIP') ? (
                 <div className="flex gap-2">
-                  <button className="btn btn-ghost w-full lg-r-md py-3" style={{ border: '1px solid var(--lg-border)' }} onClick={() => setAccFormType('Stock')}>+ Stock</button>
-                  <button className="btn btn-ghost w-full lg-r-md py-3" style={{ border: '1px solid var(--lg-border)' }} onClick={() => setAccFormType('SIP')}>+ SIP</button>
-                  <button className="btn btn-ghost w-full lg-r-md py-3" style={{ border: '1px solid var(--lg-border)' }} onClick={() => setAccFormType('ETF')}>+ ETF</button>
+                  <button className="btn btn-ghost w-full lg-r-md py-3" style={{ border: '1px solid var(--lg-border)' }} onClick={() => setAccFormType('Stock')}>+ Stock / ETF</button>
+                  <button className="btn btn-ghost w-full lg-r-md py-3" style={{ border: '1px solid var(--lg-border)' }} onClick={() => setAccFormType('SIP')}>+ Mutual Fund / SIP</button>
                 </div>
               ) : (
                 <div className="flex flex-col gap-3 anim-fade-up">
@@ -723,7 +722,7 @@ export default function SetupWizard() {
                   
                   <AutocompleteInput 
                     className="form-control lg-r-md px-4 py-3 w-full"
-                    placeholder={accFormType === 'Stock' ? "Search Stock (e.g. Reliance)" : accFormType === 'ETF' ? "Search ETF (e.g. NIFTYBEES)" : "Search Mutual Fund (e.g. Parag Parikh)"}
+                    placeholder={accFormType === 'Stock' ? "Search Stock or ETF (e.g. Reliance, NIFTYBEES)" : "Search Mutual Fund (e.g. Parag Parikh)"}
                     value={newAccName}
                     onChange={setNewAccName}
                     suggestions={accFormType === 'SIP' ? SIP_SUGGESTIONS : STOCK_SUGGESTIONS}
@@ -746,7 +745,7 @@ export default function SetupWizard() {
                     />
                   </div>
 
-                  {(accFormType === 'SIP' || accFormType === 'Stock' || accFormType === 'ETF') && (
+                  {(accFormType === 'SIP' || accFormType === 'Stock') && (
                     <div className="flex flex-col gap-3 mt-1">
                       <div className="flex items-center justify-between lg-p-sm lg-r-sm" style={{ background: 'rgba(255,255,255,0.03)' }}>
                         <span className="t-secondary">Is this an ongoing active SIP?</span>

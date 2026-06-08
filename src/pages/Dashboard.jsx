@@ -460,7 +460,7 @@ export default function Dashboard() {
   const accounts = state.accounts || [];
   const transactions = state.transactions || [];
   
-  const investmentAccounts = accounts.filter(a => ['Stock', 'ETF', 'SIP'].includes(a.type));
+  const investmentAccounts = accounts.filter(a => ['Stock', 'SIP'].includes(a.type));
   const walletAccounts = accounts.filter(a => ['Bank', 'Card', 'Cash', 'UPI'].includes(a.type));
   
   // --- Dashboard Analytics Engine ---
@@ -490,11 +490,11 @@ export default function Dashboard() {
          moneyLeft += bal;
       }
       
-      if (['Bank', 'Cash', 'Stock', 'ETF', 'SIP'].includes(acc.type)) {
+      if (['Bank', 'Cash', 'Stock', 'SIP'].includes(acc.type)) {
          netWorth += bal;
       }
 
-      if (['Stock', 'ETF', 'SIP'].includes(acc.type)) {
+      if (['Stock', 'SIP'].includes(acc.type)) {
          totalInvested += bal;
       }
     });
@@ -594,7 +594,7 @@ export default function Dashboard() {
   const [modifyFrequency, setModifyFrequency] = useState('This Time Only');
 
   const availableAccounts = useMemo(() => {
-    return (state.accounts || []).filter(a => a.type !== 'Investment' && a.type !== 'SIP' && a.type !== 'Stock' && a.type !== 'ETF');
+    return (state.accounts || []).filter(a => a.type !== 'Investment' && a.type !== 'SIP' && a.type !== 'Stock');
   }, [state.accounts]);
 
   const handleLogSubscription = (isPermanentUpdate = false) => {
@@ -1159,7 +1159,7 @@ export default function Dashboard() {
           <MetricCard
             emoji="📈" iconClass="ico-gold" label="Total Invested"
             value={fmt(m.totalInvested)}
-            sub="Across Stocks, ETFs, SIPs"
+            sub="Across Stocks, Mutual Funds & SIPs"
             pulseData={makePulse(m.totalInvested)}
             pulseColor="var(--c-gold)"
           />
@@ -1181,8 +1181,8 @@ export default function Dashboard() {
             {investmentAccounts.map(inv => (
               <TrackerRow
                 key={inv.id}
-                emoji={inv.type === 'Stock' ? '📈' : inv.type === 'ETF' ? '🧺' : '🔄'}
-                iconClass={inv.type === 'Stock' ? 'ico-cyan' : inv.type === 'ETF' ? 'ico-gold' : 'ico-purple'}
+                emoji={inv.type === 'Stock' || inv.type === 'STOCK' ? '📈' : '🔄'}
+                iconClass={inv.type === 'Stock' || inv.type === 'STOCK' ? 'ico-cyan' : 'ico-purple'}
                 delay="d-3"
                 label={inv.name}
                 sub={`${inv.type} ${inv.isActiveSIP ? '· Active SIP' : ''}`}

@@ -121,7 +121,7 @@ export default function Analytics() {
     accounts.forEach(acc => {
       const bal = parseFloat(acc.balance) || 0;
       if (acc.type === 'Card') baseNetWorth -= (parseFloat(acc.spent) || 0);
-      else if (['Bank', 'Cash', 'Stock', 'ETF', 'SIP'].includes(acc.type)) baseNetWorth += bal;
+      else if (['Bank', 'Cash', 'Stock', 'SIP'].includes(acc.type)) baseNetWorth += bal;
     });
 
     // 2. Sort transactions chronologically (oldest first)

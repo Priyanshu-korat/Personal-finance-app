@@ -150,7 +150,7 @@ export default function AddInvestmentSheet({ isOpen, onClose, shellRef }) {
 
             <div className="segmented-control" ref={typeRef}>
               <div className="segment-highlight" style={{ left: `${typePill.left}px`, width: `${typePill.width}px` }} />
-              <button type="button" className={`segment ${type === 'STOCK' ? 'active' : ''}`} onClick={() => setType('STOCK')}>Stock</button>
+              <button type="button" className={`segment ${type === 'STOCK' ? 'active' : ''}`} onClick={() => setType('STOCK')}>Stock / ETF</button>
               <button type="button" className={`segment ${type === 'MF' ? 'active' : ''}`} onClick={() => setType('MF')}>Mutual Fund</button>
             </div>
           </div>
@@ -158,11 +158,11 @@ export default function AddInvestmentSheet({ isOpen, onClose, shellRef }) {
           <ul className="inset-grouped-list mb-6">
             <li>
               <div className="flex flex-col w-full py-2">
-                <span className="subhead t-primary mb-2">Search {type === 'STOCK' ? 'Stock' : 'Mutual Fund'}</span>
+                <span className="subhead t-primary mb-2">Search {type === 'STOCK' ? 'Stock / ETF' : 'Mutual Fund'}</span>
                 <AutocompleteInput 
                   className="sheet-input w-full p-0 m-0" 
                   style={{ textAlign: 'left' }}
-                  placeholder={type === 'STOCK' ? "e.g. Reliance Industries" : "e.g. Parag Parikh Flexi"}
+                  placeholder={type === 'STOCK' ? "e.g. Reliance, NIFTYBEES" : "e.g. Parag Parikh Flexi"}
                   value={name}
                   onChange={setName}
                   onSelect={(suggestion) => {
