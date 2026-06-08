@@ -60,20 +60,37 @@ export default function AddInvestmentSheet({ isOpen, onClose, shellRef }) {
         }
       });
     } else if (entryMode === 'NEW') {
-      if (!amount) return;
-      dispatch({
-        type: 'ADD_INVESTMENT_ORDER',
-        payload: {
-          id: `ord-${Date.now()}`,
-          investmentId: null,
-          type,
-          symbol: finalSymbol.toUpperCase().trim(),
-          name: name.trim(),
-          amount: Number(amount),
-          orderDate: new Date().toISOString(),
-          status: 'PENDING'
-        }
-      });
+      if (type === 'STOCK') {
+        if (!quantity || !averageBuyPrice) return;
+        dispatch({
+          type: 'ADD_INVESTMENT',
+          payload: {
+            id: `inv-${Date.now()}`,
+            type,
+            symbol: finalSymbol.toUpperCase().trim(),
+            name: name.trim(),
+            quantity: Number(quantity),
+            averageBuyPrice: Number(averageBuyPrice),
+            currentPrice: Number(averageBuyPrice),
+            lastUpdated: new Date().toISOString()
+          }
+        });
+      } else {
+        if (!amount) return;
+        dispatch({
+          type: 'ADD_INVESTMENT_ORDER',
+          payload: {
+            id: `ord-${Date.now()}`,
+            investmentId: null,
+            type,
+            symbol: finalSymbol.toUpperCase().trim(),
+            name: name.trim(),
+            amount: Number(amount),
+            orderDate: new Date().toISOString(),
+            status: 'PENDING'
+          }
+        });
+      }
     } else if (entryMode === 'SIP') {
       if (!amount || !sipDate) return;
       dispatch({
@@ -135,18 +152,17 @@ export default function AddInvestmentSheet({ isOpen, onClose, shellRef }) {
               <div className="segment-highlight" style={{ left: `${typePill.left}px`, width: `${typePill.width}px` }} />
               <button type="button" className={`segment ${type === 'STOCK' ? 'active' : ''}`} onClick={() => setType('STOCK')}>Stock</button>
               <button type="button" className={`segment ${type === 'MF' ? 'active' : ''}`} onClick={() => setType('MF')}>Mutual Fund</button>
-              <button type="button" className={`segment ${type === 'BOND' ? 'active' : ''}`} onClick={() => setType('BOND')}>Bond</button>
             </div>
           </div>
 
           <ul className="inset-grouped-list mb-6">
             <li>
               <div className="flex flex-col w-full py-2">
-                <span className="subhead t-primary mb-2">Search {type === 'STOCK' ? 'Stock' : type === 'MF' ? 'Mutual Fund' : 'Bond'}</span>
+                <span className="subhead t-primary mb-2">Search {type === 'STOCK' ? 'Stock' : 'Mutual Fund'}</span>
                 <AutocompleteInput 
                   className="sheet-input w-full p-0 m-0" 
                   style={{ textAlign: 'left' }}
-                  placeholder={type === 'STOCK' ? "e.g. Reliance Industries" : type === 'MF' ? "e.g. Parag Parikh Flexi" : "e.g. SGBMAY29"}
+                  placeholder={type === 'STOCK' ? "e.g. Reliance Industries" : "e.g. Parag Parikh Flexi"}
                   value={name}
                   onChange={setName}
                   onSelect={(suggestion) => {
@@ -159,7 +175,7 @@ export default function AddInvestmentSheet({ isOpen, onClose, shellRef }) {
                       setSymbol(suggestion);
                     }
                   }}
-                  suggestions={type === 'STOCK' ? STOCK_SUGGESTIONS : type === 'MF' ? SIP_SUGGESTIONS : []}
+                  suggestions={type === 'STOCK' ? STOCK_SUGGESTIONS : SIP_SUGGESTIONS}
                 />
               </div>
             </li>
@@ -195,19 +211,50 @@ export default function AddInvestmentSheet({ isOpen, onClose, shellRef }) {
               </>
             ) : entryMode === 'NEW' ? (
               <>
-                <li>
-                  <div className="flex items-center justify-between w-full">
-                    <span className="subhead t-primary">Invested Amount</span>
-                    <input 
-                      type="number" step="any"
-                      className="sheet-input" 
-                      placeholder="₹0.00" 
-                      dir="rtl"
-                      value={amount}
-                      onChange={(e) => setAmount(e.target.value)}
-                    />
-                  </div>
-                </li>
+                {(type === 'STOCK') ? (
+                  <>
+                    <li>
+                      <div className="flex items-center justify-between w-full">
+                        <span className="subhead t-primary">Quantity</span>
+                        <input 
+                          type="number" step="any"
+                          className="sheet-input" 
+                          placeholder="0" 
+                          dir="rtl"
+                          value={quantity}
+                          onChange={(e) => setQuantity(e.target.value)}
+                        />
+                      </div>
+                    </li>
+                    <li>
+                      <div className="flex items-center justify-between w-full">
+                        <span className="subhead t-primary">Buy Price</span>
+                        <input 
+                          type="number" step="any"
+                          className="sheet-input" 
+                          placeholder="₹0.00" 
+                          dir="rtl"
+                          value={averageBuyPrice}
+                          onChange={(e) => setAverageBuyPrice(e.target.value)}
+                        />
+                      </div>
+                    </li>
+                  </>
+                ) : (
+                  <li>
+                    <div className="flex items-center justify-between w-full">
+                      <span className="subhead t-primary">Invested Amount</span>
+                      <input 
+                        type="number" step="any"
+                        className="sheet-input" 
+                        placeholder="₹0.00" 
+                        dir="rtl"
+                        value={amount}
+                        onChange={(e) => setAmount(e.target.value)}
+                      />
+                    </div>
+                  </li>
+                )}
               </>
             ) : (
               <>
@@ -241,7 +288,7 @@ export default function AddInvestmentSheet({ isOpen, onClose, shellRef }) {
             )}
           </ul>
           
-          {entryMode === 'NEW' && (
+          {entryMode === 'NEW' && type === 'MF' && (
             <p className="caption px-4 text-center text-[var(--c-orange)] opacity-80 mb-6">
               This order will be marked as "Pending". The app will auto-fetch your exact units in 1-3 days when the NAV settles.
             </p>
