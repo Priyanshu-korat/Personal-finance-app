@@ -458,9 +458,9 @@ const makePulse = (val) => {
 export default function Dashboard() {
   const { state, dispatch } = useFinance();
   const accounts = state.accounts || [];
+  const investments = state.investments || [];
   const transactions = state.transactions || [];
   
-  const investmentAccounts = accounts.filter(a => ['Stock', 'SIP'].includes(a.type));
   const walletAccounts = accounts.filter(a => ['Bank', 'Card', 'Cash', 'UPI'].includes(a.type));
   
   // --- Dashboard Analytics Engine ---
@@ -1172,21 +1172,21 @@ export default function Dashboard() {
       </div>
 
       {/* ── INVESTMENTS OVERVIEW ── */}
-      {investmentAccounts.length > 0 && (
+      {investments.length > 0 && (
         <div className="section">
           <div className="section-header">
             <p className="section-label anim-fade-in d-3">Investments & Assets</p>
           </div>
           <div className="flex flex-col g3">
-            {investmentAccounts.map(inv => (
+            {investments.map(inv => (
               <TrackerRow
                 key={inv.id}
-                emoji={inv.type === 'Stock' || inv.type === 'STOCK' ? '📈' : '🔄'}
-                iconClass={inv.type === 'Stock' || inv.type === 'STOCK' ? 'ico-cyan' : 'ico-purple'}
+                emoji={inv.type === 'STOCK' ? '📈' : '🔄'}
+                iconClass={inv.type === 'STOCK' ? 'ico-cyan' : 'ico-purple'}
                 delay="d-3"
                 label={inv.name}
-                sub={`${inv.type} ${inv.isActiveSIP ? '· Active SIP' : ''}`}
-                value={fmt(inv.balance)}
+                sub={`${inv.type}`}
+                value={fmt(inv.quantity * inv.currentPrice)}
                 valueClass="t-primary"
               />
             ))}
