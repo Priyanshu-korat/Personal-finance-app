@@ -1,0 +1,179 @@
+import React, { useState } from 'react';
+import { useFinance } from '../context/FinanceContext';
+import AddInvestmentSheet from './AddInvestmentSheet';
+
+export default function PortfolioWidget() {
+  const { state, dispatch, isOffline } = useFinance();
+  const [isAddOpen, setIsAddOpen] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const investments = state.investments || [];
+
+  const handleSync = async () => {
+    if (investments.length === 0 || isOffline) return;
+    setIsSyncing(true);
+    try {
+      const symbols = investments.map(i => i.symbol);
+      const res = await fetch('/api/sync-portfolio', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ symbols })
+      });
+      if (!res.ok) throw new Error('Failed to sync');
+      const data = await res.json();
+      
+      if (data.prices) {
+        const updates = investments.map(inv => ({
+          id: inv.id,
+          currentPrice: data.prices[inv.symbol] || inv.currentPrice
+        }));
+        dispatch({ type: 'UPDATE_INVESTMENT_PRICES', payload: updates });
+      }
+    } catch (e) {
+      console.error('Sync failed:', e);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  // Calculations
+  let totalInvested = 0;
+  let totalCurrent = 0;
+  let bestPerformer = null;
+  let worstPerformer = null;
+
+  investments.forEach(inv => {
+    const invested = inv.quantity * inv.averageBuyPrice;
+    const current = inv.quantity * inv.currentPrice;
+    const profit = current - invested;
+    const profitPct = invested > 0 ? (profit / invested) * 100 : 0;
+
+    totalInvested += invested;
+    totalCurrent += current;
+
+    if (!bestPerformer || profitPct > bestPerformer.pct) {
+      bestPerformer = { ...inv, pct: profitPct, abs: profit };
+    }
+    if (!worstPerformer || profitPct < worstPerformer.pct) {
+      worstPerformer = { ...inv, pct: profitPct, abs: profit };
+    }
+  });
+
+  const totalProfit = totalCurrent - totalInvested;
+  const totalProfitPct = totalInvested > 0 ? (totalProfit / totalInvested) * 100 : 0;
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex justify-between items-center mb-2">
+        <div>
+          <h2 className="title-medium" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '24px' }}>📈</span> Live Portfolio
+          </h2>
+          <p className="t-secondary" style={{ fontSize: '13px' }}>Real-time Stock & SIP Tracking</p>
+        </div>
+        <div className="flex gap-2">
+          <button className="btn btn-icon" onClick={handleSync} disabled={isSyncing || isOffline || investments.length === 0} style={{ background: 'var(--lg-fill)', borderRadius: '50%' }}>
+            {isSyncing ? '⌛' : '🔄'}
+          </button>
+          <button className="btn btn-primary" onClick={() => setIsAddOpen(true)} style={{ borderRadius: '20px', padding: '0 16px', height: '36px', fontSize: '14px' }}>
+            + Add
+          </button>
+        </div>
+      </div>
+
+      {/* Main Stats Card */}
+      <div className="lg-card lg-p-xl" style={{ borderRadius: '24px', background: 'linear-gradient(135deg, rgba(10,132,255,0.1), rgba(94,92,230,0.1))', border: '1px solid rgba(10,132,255,0.2)' }}>
+        <div className="flex flex-col gap-1 mb-4">
+          <span className="text-sm font-bold text-[var(--t-secondary)] uppercase tracking-wider">Current Value</span>
+          <span className="text-4xl font-extrabold tracking-tight">₹{totalCurrent.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+        </div>
+        
+        <div className="flex justify-between items-end">
+          <div className="flex flex-col gap-1">
+            <span className="text-xs text-[var(--t-secondary)]">Total Invested</span>
+            <span className="font-bold">₹{totalInvested.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+          </div>
+          <div className="flex flex-col items-end gap-1">
+            <span className="text-xs text-[var(--t-secondary)]">Total Returns</span>
+            <div className={`font-bold flex items-center gap-1 ${totalProfit >= 0 ? 'text-[var(--c-green)]' : 'text-[var(--c-red)]'}`}>
+              <span>{totalProfit >= 0 ? '+' : ''}₹{Math.abs(totalProfit).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+              <span className="text-xs" style={{ background: totalProfit >= 0 ? 'rgba(48,209,88,0.2)' : 'rgba(255,69,58,0.2)', padding: '2px 6px', borderRadius: '8px' }}>
+                {totalProfit >= 0 ? '↗' : '↘'} {Math.abs(totalProfitPct).toFixed(2)}%
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* AI Insights Widgets */}
+      {investments.length > 0 && (
+        <div className="grid grid-cols-2 gap-3 mt-2">
+          {/* Top Performer */}
+          <div className="lg-card p-4 flex flex-col gap-2" style={{ borderRadius: '20px', border: '1px solid rgba(48,209,88,0.2)' }}>
+            <div className="flex justify-between items-start">
+              <span className="text-xs font-bold text-[var(--t-secondary)] uppercase tracking-wider flex items-center gap-1"><span style={{ color: 'var(--c-green)' }}>★</span> Top Gainer</span>
+            </div>
+            <span className="font-bold text-sm truncate">{bestPerformer?.name || '-'}</span>
+            <span className="text-[var(--c-green)] font-bold text-lg">+{bestPerformer?.pct.toFixed(2)}%</span>
+          </div>
+
+          {/* Worst Performer */}
+          <div className="lg-card p-4 flex flex-col gap-2" style={{ borderRadius: '20px', border: '1px solid rgba(255,69,58,0.2)' }}>
+            <div className="flex justify-between items-start">
+              <span className="text-xs font-bold text-[var(--t-secondary)] uppercase tracking-wider flex items-center gap-1"><span style={{ color: 'var(--c-red)' }}>▼</span> Top Loser</span>
+            </div>
+            <span className="font-bold text-sm truncate">{worstPerformer?.name || '-'}</span>
+            <span className="text-[var(--c-red)] font-bold text-lg">{worstPerformer?.pct.toFixed(2)}%</span>
+          </div>
+        </div>
+      )}
+
+      {/* List of Investments */}
+      {investments.length > 0 && (
+        <div className="mt-4 flex flex-col gap-3">
+          <h3 className="text-sm font-bold text-[var(--t-secondary)] uppercase tracking-wider mb-1">Your Holdings</h3>
+          {investments.map(inv => {
+            const invested = inv.quantity * inv.averageBuyPrice;
+            const current = inv.quantity * inv.currentPrice;
+            const profit = current - invested;
+            const profitPct = invested > 0 ? (profit / invested) * 100 : 0;
+            const isPositive = profit >= 0;
+
+            return (
+              <div key={inv.id} className="lg-card p-4 flex justify-between items-center" style={{ borderRadius: '20px' }}>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg shrink-0" style={{ background: inv.type === 'STOCK' ? 'rgba(10,132,255,0.1)' : 'rgba(48,209,88,0.1)', color: inv.type === 'STOCK' ? 'var(--c-blue)' : 'var(--c-green)' }}>
+                    {inv.type === 'STOCK' ? 'S' : 'M'}
+                  </div>
+                  <div className="flex flex-col truncate">
+                    <span className="font-bold truncate" style={{ maxWidth: '140px' }}>{inv.name}</span>
+                    <span className="text-xs text-[var(--t-secondary)] uppercase">{inv.symbol} • {inv.quantity} {inv.type === 'STOCK' ? 'shares' : 'units'}</span>
+                  </div>
+                </div>
+                <div className="flex flex-col items-end shrink-0">
+                  <span className="font-bold">₹{current.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                  <span className={`text-xs font-bold ${isPositive ? 'text-[var(--c-green)]' : 'text-[var(--c-red)]'}`}>
+                    {isPositive ? '+' : ''}₹{Math.abs(profit).toLocaleString('en-IN', { maximumFractionDigits: 0 })} ({isPositive ? '+' : ''}{profitPct.toFixed(1)}%)
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {investments.length === 0 && (
+        <div className="lg-card p-6 flex flex-col items-center justify-center text-center mt-2" style={{ borderRadius: '24px', borderStyle: 'dashed' }}>
+          <span style={{ fontSize: '48px', marginBottom: '12px' }}>📊</span>
+          <h3 className="font-bold mb-2">No Investments Yet</h3>
+          <p className="text-sm text-[var(--t-secondary)] mb-4">Add your stocks and mutual funds to track your net worth and live returns automatically.</p>
+          <button className="btn btn-primary" onClick={() => setIsAddOpen(true)} style={{ borderRadius: '20px', padding: '0 24px', height: '40px' }}>
+            Add Your First Asset
+          </button>
+        </div>
+      )}
+
+      <AddInvestmentSheet isOpen={isAddOpen} onClose={() => setIsAddOpen(false)} />
+    </div>
+  );
+}

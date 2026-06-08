@@ -43,7 +43,8 @@ export default function AIAssistantSheet({ isOpen, onClose, tabBarRef, shellRef 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           query: userMessage,
-          transactions: state.transactions || []
+          transactions: state.transactions || [],
+          investments: state.investments || []
         })
       });
 

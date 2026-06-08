@@ -36,7 +36,8 @@ export const fetchInitialState = async (userId) => {
       { data: logsData },
       { data: contactsData },
       { data: splitsData },
-      { data: settlementsData }
+      { data: settlementsData },
+      { data: investmentsData }
     ] = await Promise.all([
       supabase.from('accounts').select('*').eq('user_id', userId),
       supabase.from('categories').select('*').eq('user_id', userId),
@@ -46,7 +47,8 @@ export const fetchInitialState = async (userId) => {
       supabase.from('contacts').select('*').eq('user_id', userId),
       // Fetch all shared splits where this user is the creator, the payer, or is involved
       supabase.from('shared_splits').select('*').or(`creator_id.eq.${userId},paid_by.eq.${userId},involved_profiles.cs.[{"userId":"${userId}"}]`).order('date', { ascending: false }),
-      supabase.from('settlement_requests').select('*').or(`initiator_id.eq.${userId},receiver_phone.eq.${profileData?.phone || 'none'}`).eq('status', 'pending')
+      supabase.from('settlement_requests').select('*').or(`initiator_id.eq.${userId},receiver_phone.eq.${profileData?.phone || 'none'}`).eq('status', 'pending'),
+      supabase.from('investments').select('*').eq('user_id', userId)
     ]);
 
     return {
@@ -64,7 +66,8 @@ export const fetchInitialState = async (userId) => {
       processedLogs: (logsData || []).map(toCamel),
       contacts: (contactsData || []).map(toCamel),
       sharedSplits: (splitsData || []).map(toCamel),
-      settlementRequests: (settlementsData || []).map(toCamel)
+      settlementRequests: (settlementsData || []).map(toCamel),
+      investments: (investmentsData || []).map(toCamel)
     };
   } catch (err) {
     console.error('Error fetching initial state:', err);
@@ -261,6 +264,19 @@ export const syncActionToSupabase = async (action, userId) => {
           await Promise.all(promises).then(handleAllResponses);
         }
         
+        break;
+      }
+
+      case 'ADD_INVESTMENT': {
+        await supabase.from('investments').insert({ ...toSnake(action.payload), user_id: userId }).then(handleSupabaseResponse);
+        break;
+      }
+
+      case 'UPDATE_INVESTMENT_PRICES': {
+        const promises = action.payload.map(inv => 
+          supabase.from('investments').update({ current_price: inv.currentPrice, last_updated: new Date().toISOString() }).eq('id', inv.id).eq('user_id', userId)
+        );
+        await Promise.all(promises).then(handleAllResponses);
         break;
       }
     }
