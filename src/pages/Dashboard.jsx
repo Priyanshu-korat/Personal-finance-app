@@ -490,13 +490,17 @@ export default function Dashboard() {
          moneyLeft += bal;
       }
       
-      if (['Bank', 'Cash', 'Stock', 'SIP'].includes(acc.type)) {
+      if (['Bank', 'Cash'].includes(acc.type)) {
          netWorth += bal;
       }
+    });
 
-      if (['Stock', 'SIP'].includes(acc.type)) {
-         totalInvested += bal;
-      }
+    // 1.5 Investments (New system)
+    investments.forEach(inv => {
+      const invValue = inv.quantity * inv.currentPrice;
+      const invCost = inv.quantity * inv.averageBuyPrice;
+      totalInvested += invCost;
+      netWorth += invValue;
     });
 
     // 2. Transactions
