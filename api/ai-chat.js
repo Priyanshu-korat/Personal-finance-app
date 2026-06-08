@@ -38,9 +38,9 @@ RULES:
 4. Use markdown for bolding important numbers or categories.
 5. If there is no data matching their request, tell them nicely.`;
 
-    // We use raw fetch because the official SDK currently has a bug where it 
-    // misidentifies the new "AQ." Google API keys as OAuth tokens and throws 404s.
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    // The API key is valid but older models like 1.5 were deprecated. 
+    // We use the universally available alias: gemini-flash-latest
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
     
     const response = await fetch(url, {
       method: 'POST',
@@ -56,19 +56,8 @@ RULES:
 
     if (!response.ok) {
       const errText = await response.text();
-      let debugInfo = '';
-      if (response.status === 404) {
-        try {
-          const modelsRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
-          const modelsData = await modelsRes.json();
-          debugInfo = `\n\nAVAILABLE MODELS FOR YOUR KEY: ` + (modelsData.models || []).map(m => m.name).join(', ');
-        } catch(e) {
-          debugInfo = " (Failed to fetch models list)";
-        }
-      }
-      
       console.error("Gemini API Error:", errText);
-      throw new Error(`API Error ${response.status}: ${errText}${debugInfo}`);
+      throw new Error(`API Error ${response.status}: ${errText}`);
     }
 
     const data = await response.json();
