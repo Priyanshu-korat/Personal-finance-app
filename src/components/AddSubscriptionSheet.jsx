@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useFinance } from '../context/FinanceContext';
 import LiquidSelect from './LiquidSelect';
 import MiniCalendar from './MiniCalendar';
@@ -44,7 +45,7 @@ export default function AddSubscriptionSheet({ isOpen, onClose }) {
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div className="sheet-overlay anim-fade-in" onClick={onClose}>
       <div className="sheet-modal lg lg-r-xl anim-morph-up" onClick={(e) => e.stopPropagation()}>
         <div className="sheet-handle" />
@@ -138,6 +139,7 @@ export default function AddSubscriptionSheet({ isOpen, onClose }) {
           </ul>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

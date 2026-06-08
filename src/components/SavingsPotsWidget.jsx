@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useFinance } from '../context/FinanceContext';
 
 export default function SavingsPotsWidget() {
@@ -88,7 +89,7 @@ export default function SavingsPotsWidget() {
 
       <div className="flex overflow-x-auto gap-4 pb-4 hide-scrollbar px-1">
         {pots.length === 0 ? (
-          <div className="lg-card p-6 flex flex-col items-center justify-center text-center w-full opacity-80" style={{ borderRadius: '24px', borderStyle: 'dashed' }}>
+          <div className="lg lg-p-xl lg-r-2xl flex flex-col items-center justify-center text-center w-full opacity-80" style={{ borderStyle: 'dashed' }}>
             <span style={{ fontSize: '32px', marginBottom: '8px' }}>🐷</span>
             <h4 className="font-bold mb-1">No Goals Yet</h4>
             <p className="text-xs text-[var(--t-secondary)]">Create a pot for your next vacation, gadget, or emergency fund.</p>
@@ -102,8 +103,8 @@ export default function SavingsPotsWidget() {
             return (
               <div 
                 key={pot.id} 
-                className="lg-card shrink-0 p-5 flex flex-col items-center justify-between anim-fade-in" 
-                style={{ width: '160px', borderRadius: '24px', border: isCompleted ? '1px solid var(--c-green)' : '1px solid var(--lg-border)' }}
+                className="lg lg-p-md lg-r-2xl shrink-0 flex flex-col items-center justify-between anim-fade-in" 
+                style={{ width: '160px', border: isCompleted ? '1px solid var(--c-green)' : '1px solid var(--lg-border)' }}
                 onClick={() => { if (!isCompleted) { setSelectedPot(pot); setIsFundOpen(true); } }}
               >
                 <div className="text-3xl mb-2">{pot.icon}</div>
@@ -126,7 +127,7 @@ export default function SavingsPotsWidget() {
       </div>
 
       {/* Add Pot Sheet */}
-      {isAddOpen && (
+      {isAddOpen && createPortal(
         <div className="sheet-overlay anim-fade-in" onClick={() => setIsAddOpen(false)}>
           <div className="sheet-modal lg lg-r-xl anim-slide-up" onClick={e => e.stopPropagation()}>
             <div className="sheet-handle" />
@@ -158,11 +159,12 @@ export default function SavingsPotsWidget() {
               </ul>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Fund Pot Sheet */}
-      {isFundOpen && selectedPot && (
+      {isFundOpen && selectedPot && createPortal(
         <div className="sheet-overlay anim-fade-in" onClick={() => setIsFundOpen(false)}>
           <div className="sheet-modal lg lg-r-xl anim-slide-up" onClick={e => e.stopPropagation()}>
             <div className="sheet-handle" />
@@ -186,7 +188,8 @@ export default function SavingsPotsWidget() {
               </ul>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

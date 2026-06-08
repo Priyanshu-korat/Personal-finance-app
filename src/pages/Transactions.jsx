@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useFinance } from '../context/FinanceContext';
+import EditTransactionSheet from '../components/EditTransactionSheet';
 
 const FILTERS = ['All', 'Expense', 'Income', 'Investment', 'Transfer'];
 
@@ -37,6 +38,7 @@ export default function Transactions() {
   const [activeFilter, setActiveFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [isScrolled, setIsScrolled] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState(null);
 
   // Scroll listener for dynamic frosted glass effect
   useEffect(() => {
@@ -190,6 +192,7 @@ export default function Transactions() {
                     <div 
                       key={t.id} 
                       className="flex items-center justify-between lg-interactive"
+                      onClick={() => setSelectedTransaction(t)}
                       style={{ 
                         borderBottom: index < txs.length - 1 ? '1px solid rgba(255,255,255,0.06)' : 'none',
                         margin: '0 -10px',
@@ -271,6 +274,11 @@ export default function Transactions() {
           ))
         )}
       </div>
+
+      <EditTransactionSheet 
+        transaction={selectedTransaction} 
+        onClose={() => setSelectedTransaction(null)} 
+      />
     </div>
   );
 }

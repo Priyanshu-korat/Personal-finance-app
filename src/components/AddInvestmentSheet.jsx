@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useFinance } from '../context/FinanceContext';
 
 export default function AddInvestmentSheet({ isOpen, onClose, shellRef }) {
@@ -11,6 +12,27 @@ export default function AddInvestmentSheet({ isOpen, onClose, shellRef }) {
   const [averageBuyPrice, setAverageBuyPrice] = useState('');
   const [amount, setAmount] = useState('');
   const [sipDate, setSipDate] = useState('1');
+
+  const modeRef = useRef(null);
+  const typeRef = useRef(null);
+  const [modePill, setModePill] = useState({ left: 2, width: 0 });
+  const [typePill, setTypePill] = useState({ left: 2, width: 0 });
+
+  useEffect(() => {
+    if (!modeRef.current) return;
+    const activeBtn = modeRef.current.querySelector('.segment.active');
+    if (activeBtn) {
+      setModePill({ left: activeBtn.offsetLeft, width: activeBtn.offsetWidth });
+    }
+  }, [entryMode, isOpen]);
+
+  useEffect(() => {
+    if (!typeRef.current) return;
+    const activeBtn = typeRef.current.querySelector('.segment.active');
+    if (activeBtn) {
+      setTypePill({ left: activeBtn.offsetLeft, width: activeBtn.offsetWidth });
+    }
+  }, [type, isOpen]);
 
   if (!isOpen) return null;
 
@@ -76,7 +98,7 @@ export default function AddInvestmentSheet({ isOpen, onClose, shellRef }) {
     setSipDate('1');
   };
 
-  return (
+  return createPortal(
     <div className="sheet-overlay anim-fade-in" onClick={onClose}>
       <div className="sheet-modal lg lg-r-xl anim-morph-up" onClick={(e) => e.stopPropagation()}>
         <div className="sheet-handle" />
@@ -98,15 +120,17 @@ export default function AddInvestmentSheet({ isOpen, onClose, shellRef }) {
         <div className="sheet-content">
           {/* Top Segmented Controls */}
           <div className="px-4 mb-4 flex flex-col gap-3">
-            <div className="flex bg-[var(--glass-surface)] rounded-2xl p-1 shadow-sm border border-[var(--glass-border)]">
-              <button type="button" className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${entryMode === 'PAST' ? 'bg-[var(--glass-accent)] text-[var(--t-primary)] shadow-sm' : 'text-[var(--t-secondary)]'}`} onClick={() => setEntryMode('PAST')}>Past Holding</button>
-              <button type="button" className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${entryMode === 'NEW' ? 'bg-[var(--glass-accent)] text-[var(--t-primary)] shadow-sm' : 'text-[var(--t-secondary)]'}`} onClick={() => setEntryMode('NEW')}>One-Time Today</button>
-              <button type="button" className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${entryMode === 'SIP' ? 'bg-[var(--glass-accent)] text-[var(--t-primary)] shadow-sm' : 'text-[var(--t-secondary)]'}`} onClick={() => setEntryMode('SIP')}>Monthly SIP</button>
+            <div className="segmented-control" ref={modeRef}>
+              <div className="segment-highlight" style={{ left: `${modePill.left}px`, width: `${modePill.width}px` }} />
+              <button type="button" className={`segment ${entryMode === 'PAST' ? 'active' : ''}`} onClick={() => setEntryMode('PAST')}>Past Holding</button>
+              <button type="button" className={`segment ${entryMode === 'NEW' ? 'active' : ''}`} onClick={() => setEntryMode('NEW')}>One-Time Today</button>
+              <button type="button" className={`segment ${entryMode === 'SIP' ? 'active' : ''}`} onClick={() => setEntryMode('SIP')}>Monthly SIP</button>
             </div>
 
-            <div className="flex bg-[var(--glass-surface)] rounded-2xl p-1 shadow-sm border border-[var(--glass-border)]">
-              <button type="button" className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${type === 'STOCK' ? 'bg-[var(--c-blue)] text-white shadow-md' : 'text-[var(--t-secondary)]'}`} onClick={() => setType('STOCK')}>Stock</button>
-              <button type="button" className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${type === 'MF' ? 'bg-[var(--c-green)] text-white shadow-md' : 'text-[var(--t-secondary)]'}`} onClick={() => setType('MF')}>Mutual Fund</button>
+            <div className="segmented-control" ref={typeRef}>
+              <div className="segment-highlight" style={{ left: `${typePill.left}px`, width: `${typePill.width}px` }} />
+              <button type="button" className={`segment ${type === 'STOCK' ? 'active' : ''}`} onClick={() => setType('STOCK')}>Stock</button>
+              <button type="button" className={`segment ${type === 'MF' ? 'active' : ''}`} onClick={() => setType('MF')}>Mutual Fund</button>
             </div>
           </div>
 
@@ -228,6 +252,7 @@ export default function AddInvestmentSheet({ isOpen, onClose, shellRef }) {
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

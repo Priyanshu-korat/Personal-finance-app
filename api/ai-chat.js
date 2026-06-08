@@ -6,7 +6,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { query, transactions, investments } = req.body;
+    const { query, transactions, investments, profile } = req.body;
 
     if (!query) {
       return res.status(400).json({ error: 'Missing query' });

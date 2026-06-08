@@ -826,6 +826,19 @@ export default function Dashboard() {
         </h2>
       </div>
 
+      {/* ── P1: NET WORTH HERO (Hidden for Tier 1) ── */}
+      {state.profile?.tier !== 1 && (
+        <div className="section mb-6 mt-2">
+          <HeroCard
+            label="Total Net Worth"
+            value={fmt(m.netWorth)}
+            sub={`Overview of all configured assets and liabilities`}
+            pulseData={makePulse(m.netWorth)}
+            pulseColor="var(--c-indigo-lt)"
+          />
+        </div>
+      )}
+
       <HealthScoreWidget />
 
       <SavingsPotsWidget />
@@ -1086,20 +1099,6 @@ export default function Dashboard() {
           </div>
         </div>
       )}
-
-      {/* ── P1: NET WORTH HERO (Hidden for Tier 1) ── */}
-      {state.profile.tier !== 1 && (
-        <div className="section">
-          <HeroCard
-            label="Total Net Worth"
-            value={fmt(m.netWorth)}
-            sub={`Overview of all configured assets and liabilities`}
-            pulseData={makePulse(m.netWorth)}
-            pulseColor="var(--c-indigo-lt)"
-          />
-        </div>
-      )}
-
       {/* ── MY WALLET / ACCOUNTS CAROUSEL ── */}
       {walletAccounts.length > 0 && (
         <div className="anim-fade-up d-2" style={{ marginBottom: 32 }}>

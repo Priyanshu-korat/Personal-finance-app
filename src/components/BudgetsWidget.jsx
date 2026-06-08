@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useFinance } from '../context/FinanceContext';
 import LiquidSelect from './LiquidSelect';
 
@@ -47,7 +48,7 @@ export default function BudgetsWidget() {
       </div>
 
       {budgets.length === 0 ? (
-        <div className="lg-card p-6 flex flex-col items-center text-center opacity-80" style={{ borderRadius: '24px', borderStyle: 'dashed' }}>
+        <div className="lg lg-p-xl lg-r-2xl flex flex-col items-center text-center opacity-80" style={{ borderStyle: 'dashed' }}>
           <span style={{ fontSize: '32px', marginBottom: '8px' }}>🎯</span>
           <h4 className="font-bold mb-1">No Budgets Set</h4>
           <p className="text-xs text-[var(--t-secondary)]">Set spending limits for your categories to keep your expenses in check.</p>
@@ -67,7 +68,7 @@ export default function BudgetsWidget() {
             const icon = catDef ? catDef.icon : '🛒';
 
             return (
-              <div key={b.id} className="lg-card p-4 flex flex-col gap-3" style={{ borderRadius: '20px' }}>
+              <div key={b.id} className="lg lg-p-md lg-r-2xl flex flex-col gap-3">
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full flex items-center justify-center text-lg" style={{ background: 'var(--lg-fill-hover)' }}>
@@ -95,7 +96,7 @@ export default function BudgetsWidget() {
       )}
 
       {/* Edit Budget Sheet */}
-      {isEditOpen && (
+      {isEditOpen && createPortal(
         <div className="sheet-overlay anim-fade-in" onClick={() => setIsEditOpen(false)}>
           <div className="sheet-modal lg lg-r-xl anim-slide-up" onClick={e => e.stopPropagation()}>
             <div className="sheet-handle" />
@@ -129,7 +130,8 @@ export default function BudgetsWidget() {
               </ul>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

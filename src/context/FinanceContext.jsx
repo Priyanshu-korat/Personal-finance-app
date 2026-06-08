@@ -99,6 +99,20 @@ function financeReducer(state, action) {
     case 'ADD_TRANSACTION':
       return { ...state, transactions: [action.payload, ...state.transactions] };
 
+    case 'UPDATE_TRANSACTION':
+      return {
+        ...state,
+        transactions: state.transactions.map(t =>
+          t.id === action.payload.id ? { ...t, ...action.payload.updates } : t
+        )
+      };
+
+    case 'DELETE_TRANSACTION':
+      return {
+        ...state,
+        transactions: state.transactions.filter(t => t.id !== action.payload)
+      };
+
     case 'ADD_SUBSCRIPTION':
       return { ...state, subscriptions: [...state.subscriptions, action.payload] };
 
