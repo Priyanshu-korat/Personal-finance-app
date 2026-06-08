@@ -121,7 +121,7 @@ export default function AddInvestmentSheet({ isOpen, onClose, shellRef }) {
                 <input type="number" step="any" value={averageBuyPrice} onChange={e => setAverageBuyPrice(e.target.value)} placeholder="₹0.00" className="lg-input" required />
               </div>
             </div>
-          ) : (
+          ) : entryMode === 'NEW' ? (
             <div className="flex flex-col gap-1">
               <label className="text-xs font-bold text-[var(--t-secondary)] uppercase tracking-wider">Invested Amount</label>
               <input type="number" step="any" value={amount} onChange={e => setAmount(e.target.value)} placeholder="₹0.00" className="lg-input" required />
