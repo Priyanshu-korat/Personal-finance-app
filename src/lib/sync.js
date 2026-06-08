@@ -327,6 +327,32 @@ export const syncActionToSupabase = async (action, userId) => {
         await supabase.from('savings_pots').update(toSnake(updates)).eq('id', id).eq('user_id', userId).then(handleSupabaseResponse);
         break;
       }
+
+      case 'RESET_APP': {
+        // Wipe all user data from Supabase tables
+        const tables = [
+          'accounts', 'categories', 'special_trackers', 'transactions', 
+          'subscriptions', 'processed_subscriptions', 'processed_card_bills',
+          'contacts', 'shared_splits', 'settlement_requests',
+          'investments', 'investment_orders', 'budgets', 'savings_pots'
+        ];
+        
+        const deletePromises = tables.map(table => 
+          supabase.from(table).delete().eq('user_id', userId)
+        );
+        
+        await Promise.all(deletePromises);
+        
+        // Reset profile
+        await supabase.from('profiles').update({
+          is_setup_complete: false,
+          name: '',
+          tier: 2,
+          use_sub_categories: false
+        }).eq('id', userId);
+        
+        break;
+      }
     }
     return true; // Success
   } catch (err) {
