@@ -6,8 +6,85 @@ export default function PortfolioWidget() {
   const { state, dispatch, isOffline } = useFinance();
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isResolving, setIsResolving] = useState(false);
 
   const investments = state.investments || [];
+  const pendingOrders = (state.investmentOrders || []).filter(o => o.status === 'PENDING');
+
+  const handleResolveOrders = async () => {
+    if (pendingOrders.length === 0 || isOffline) return;
+    setIsResolving(true);
+    try {
+      const res = await fetch('/api/resolve-orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: state.profile?.id, pendingOrders })
+      });
+      if (!res.ok) throw new Error('Failed to resolve orders');
+      
+      const data = await res.json();
+      
+      if (data.resolvedCount > 0) {
+        // Apply each resolution
+        data.resolutions.forEach(res => {
+          // 1. Mark order as settled
+          dispatch({
+            type: 'SETTLE_INVESTMENT_ORDER',
+            payload: {
+              orderId: res.orderId,
+              updates: { status: 'SETTLED', settledNav: res.settledNav, settledUnits: res.settledUnits }
+            }
+          });
+
+          // 2. Update or Create the Investment Holding
+          const existing = investments.find(inv => inv.symbol === res.symbol);
+          if (existing) {
+            // Recalculate Average Buy Price
+            const oldTotalCost = existing.quantity * existing.averageBuyPrice;
+            const newTotalCost = oldTotalCost + res.amount;
+            const newQuantity = existing.quantity + res.settledUnits;
+            const newAvgPrice = newTotalCost / newQuantity;
+
+            dispatch({
+              type: 'UPDATE_INVESTMENT',
+              payload: {
+                id: existing.id,
+                updates: {
+                  quantity: newQuantity,
+                  averageBuyPrice: newAvgPrice,
+                  currentPrice: res.settledNav // Update to latest known price
+                }
+              }
+            });
+          } else {
+            // Create new holding
+            dispatch({
+              type: 'ADD_INVESTMENT',
+              payload: {
+                id: `inv-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                type: res.type,
+                symbol: res.symbol,
+                name: res.name,
+                quantity: res.settledUnits,
+                averageBuyPrice: res.settledNav,
+                currentPrice: res.settledNav,
+                lastUpdated: new Date().toISOString()
+              }
+            });
+          }
+        });
+
+        alert(`Successfully settled ${data.resolvedCount} orders automatically at exact market NAVs!`);
+      } else {
+        alert('No new NAVs found for your pending orders yet. Check back tomorrow!');
+      }
+    } catch (e) {
+      console.error('Resolution failed:', e);
+      alert('Failed to resolve orders.');
+    } finally {
+      setIsResolving(false);
+    }
+  };
 
   const handleSync = async () => {
     if (investments.length === 0 || isOffline) return;
@@ -162,7 +239,7 @@ export default function PortfolioWidget() {
         </div>
       )}
 
-      {investments.length === 0 && (
+      {investments.length === 0 && pendingOrders.length === 0 && (
         <div className="lg-card p-6 flex flex-col items-center justify-center text-center mt-2" style={{ borderRadius: '24px', borderStyle: 'dashed' }}>
           <span style={{ fontSize: '48px', marginBottom: '12px' }}>📊</span>
           <h3 className="font-bold mb-2">No Investments Yet</h3>
@@ -170,6 +247,38 @@ export default function PortfolioWidget() {
           <button className="btn btn-primary" onClick={() => setIsAddOpen(true)} style={{ borderRadius: '20px', padding: '0 24px', height: '40px' }}>
             Add Your First Asset
           </button>
+        </div>
+      )}
+
+      {/* Pending Orders */}
+      {pendingOrders.length > 0 && (
+        <div className="mt-4 flex flex-col gap-3">
+          <div className="flex justify-between items-center mb-1">
+            <h3 className="text-sm font-bold text-[var(--c-orange)] uppercase tracking-wider">Pending Orders ({pendingOrders.length})</h3>
+            <button className="btn btn-ghost btn-sm" onClick={handleResolveOrders} disabled={isResolving} style={{ color: 'var(--c-orange)', border: '1px solid var(--c-orange)', borderRadius: '12px', padding: '4px 10px', fontSize: '12px' }}>
+              {isResolving ? 'Checking API...' : 'Auto-Resolve Now'}
+            </button>
+          </div>
+          {pendingOrders.map(order => {
+            const date = new Date(order.orderDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+            return (
+              <div key={order.id} className="lg-card p-4 flex justify-between items-center opacity-80" style={{ borderRadius: '20px', borderLeft: '3px solid var(--c-orange)' }}>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg shrink-0" style={{ background: 'rgba(255, 159, 10, 0.1)', color: 'var(--c-orange)' }}>
+                    ⏳
+                  </div>
+                  <div className="flex flex-col truncate">
+                    <span className="font-bold truncate" style={{ maxWidth: '140px' }}>{order.name}</span>
+                    <span className="text-xs text-[var(--t-secondary)] uppercase">Waiting for NAV from {date}</span>
+                  </div>
+                </div>
+                <div className="flex flex-col items-end shrink-0">
+                  <span className="font-bold">₹{order.amount.toLocaleString('en-IN')}</span>
+                  <span className="text-xs font-bold text-[var(--c-orange)]">Processing</span>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
 

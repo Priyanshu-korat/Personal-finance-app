@@ -60,6 +60,7 @@ const initialState = {
   sharedSplits: [],
   settlementRequests: [],
   investments: [],
+  investmentOrders: [],
   /*
     Investment Schema:
     { id: 'inv-1', type: 'STOCK', symbol: 'RELIANCE.NS', name: 'Reliance Industries', quantity: 10, averageBuyPrice: 2500, currentPrice: 2600, lastUpdated: '...' }
@@ -251,6 +252,28 @@ function financeReducer(state, action) {
           }
           return inv;
         })
+      };
+    }
+
+    case 'UPDATE_INVESTMENT': {
+      return {
+        ...state,
+        investments: (state.investments || []).map(inv =>
+          inv.id === action.payload.id ? { ...inv, ...action.payload.updates } : inv
+        )
+      };
+    }
+
+    case 'ADD_INVESTMENT_ORDER':
+      return { ...state, investmentOrders: [action.payload, ...(state.investmentOrders || [])] };
+
+    case 'SETTLE_INVESTMENT_ORDER': {
+      const { orderId, updates } = action.payload;
+      return {
+        ...state,
+        investmentOrders: (state.investmentOrders || []).map(o =>
+          o.id === orderId ? { ...o, ...updates } : o
+        )
       };
     }
 

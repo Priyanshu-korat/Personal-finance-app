@@ -37,7 +37,8 @@ export const fetchInitialState = async (userId) => {
       { data: contactsData },
       { data: splitsData },
       { data: settlementsData },
-      { data: investmentsData }
+      { data: investmentsData },
+      { data: ordersData }
     ] = await Promise.all([
       supabase.from('accounts').select('*').eq('user_id', userId),
       supabase.from('categories').select('*').eq('user_id', userId),
@@ -48,7 +49,8 @@ export const fetchInitialState = async (userId) => {
       // Fetch all shared splits where this user is the creator, the payer, or is involved
       supabase.from('shared_splits').select('*').or(`creator_id.eq.${userId},paid_by.eq.${userId},involved_profiles.cs.[{"userId":"${userId}"}]`).order('date', { ascending: false }),
       supabase.from('settlement_requests').select('*').or(`initiator_id.eq.${userId},receiver_phone.eq.${profileData?.phone || 'none'}`).eq('status', 'pending'),
-      supabase.from('investments').select('*').eq('user_id', userId)
+      supabase.from('investments').select('*').eq('user_id', userId),
+      supabase.from('investment_orders').select('*').eq('user_id', userId).order('order_date', { ascending: false })
     ]);
 
     return {
@@ -67,7 +69,8 @@ export const fetchInitialState = async (userId) => {
       contacts: (contactsData || []).map(toCamel),
       sharedSplits: (splitsData || []).map(toCamel),
       settlementRequests: (settlementsData || []).map(toCamel),
-      investments: (investmentsData || []).map(toCamel)
+      investments: (investmentsData || []).map(toCamel),
+      investmentOrders: (ordersData || []).map(toCamel)
     };
   } catch (err) {
     console.error('Error fetching initial state:', err);
@@ -272,11 +275,27 @@ export const syncActionToSupabase = async (action, userId) => {
         break;
       }
 
+      case 'UPDATE_INVESTMENT': {
+        await supabase.from('investments').update(toSnake(action.payload.updates)).eq('id', action.payload.id).eq('user_id', userId).then(handleSupabaseResponse);
+        break;
+      }
+
       case 'UPDATE_INVESTMENT_PRICES': {
         const promises = action.payload.map(inv => 
           supabase.from('investments').update({ current_price: inv.currentPrice, last_updated: new Date().toISOString() }).eq('id', inv.id).eq('user_id', userId)
         );
         await Promise.all(promises).then(handleAllResponses);
+        break;
+      }
+
+      case 'ADD_INVESTMENT_ORDER': {
+        await supabase.from('investment_orders').insert({ ...toSnake(action.payload), user_id: userId }).then(handleSupabaseResponse);
+        break;
+      }
+
+      case 'SETTLE_INVESTMENT_ORDER': {
+        const { orderId, updates } = action.payload;
+        await supabase.from('investment_orders').update(toSnake(updates)).eq('id', orderId).eq('user_id', userId).then(handleSupabaseResponse);
         break;
       }
     }

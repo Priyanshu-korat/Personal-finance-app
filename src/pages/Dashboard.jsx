@@ -628,6 +628,23 @@ export default function Dashboard() {
       } 
     });
 
+    // Auto-Generate Pending Investment Order if it's a SIP
+    if (selectedSubscription.isSip) {
+      dispatch({
+        type: 'ADD_INVESTMENT_ORDER',
+        payload: {
+          id: `ord-${Date.now()}-sip`,
+          investmentId: null,
+          type: selectedSubscription.sipType || 'MF',
+          symbol: selectedSubscription.sipSymbol,
+          name: selectedSubscription.sipName || selectedSubscription.name,
+          amount: finalAmount,
+          orderDate: new Date().toISOString(),
+          status: 'PENDING'
+        }
+      });
+    }
+
     if (isPermanentUpdate) {
       dispatch({
         type: 'UPDATE_SUBSCRIPTION',
