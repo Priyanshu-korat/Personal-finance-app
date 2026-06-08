@@ -38,29 +38,34 @@ RULES:
 4. Use markdown for bolding important numbers or categories.
 5. If there is no data matching their request, tell them nicely.`;
 
-    let result;
-    try {
-      result = await model.generateContent({
+    // We use raw fetch because the official SDK currently has a bug where it 
+    // misidentifies the new "AQ." Google API keys as OAuth tokens and throws 404s.
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
         contents: [
           { role: 'user', parts: [{ text: systemPrompt + '\n\nUSER QUESTION: ' + query }] }
         ]
-      });
-    } catch (modelError) {
-      // If the latest flash model throws a 404 or unsupported error, fallback to the older proven gemini-pro
-      console.warn("Primary model failed, falling back to gemini-pro", modelError);
-      const fallbackModel = genAI.getGenerativeModel({ model: "gemini-pro" });
-      result = await fallbackModel.generateContent({
-        contents: [
-          { role: 'user', parts: [{ text: systemPrompt + '\n\nUSER QUESTION: ' + query }] }
-        ]
-      });
+      })
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error("Gemini API Error:", errText);
+      throw new Error(`API Error ${response.status}: ${errText}`);
     }
 
-    const responseText = result.response.text();
+    const data = await response.json();
+    const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || "I couldn't generate a response.";
 
     return res.status(200).json({ reply: responseText });
   } catch (error) {
     console.error('AI Chat Error:', error);
-    return res.status(500).json({ error: 'Failed to communicate with AI', details: error.message });
+    return res.status(500).json({ error: 'Failed to communicate with AI', details: String(error) });
   }
 }
