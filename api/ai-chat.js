@@ -56,8 +56,19 @@ RULES:
 
     if (!response.ok) {
       const errText = await response.text();
+      let debugInfo = '';
+      if (response.status === 404) {
+        try {
+          const modelsRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+          const modelsData = await modelsRes.json();
+          debugInfo = `\n\nAVAILABLE MODELS FOR YOUR KEY: ` + (modelsData.models || []).map(m => m.name).join(', ');
+        } catch(e) {
+          debugInfo = " (Failed to fetch models list)";
+        }
+      }
+      
       console.error("Gemini API Error:", errText);
-      throw new Error(`API Error ${response.status}: ${errText}`);
+      throw new Error(`API Error ${response.status}: ${errText}${debugInfo}`);
     }
 
     const data = await response.json();
