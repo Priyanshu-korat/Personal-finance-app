@@ -329,16 +329,19 @@ export const syncActionToSupabase = async (action, userId) => {
       }
 
       case 'RESET_APP': {
-        // Wipe all user data from Supabase tables
+        // Wipe all user data from Supabase tables gracefully
         const tables = [
-          'accounts', 'categories', 'special_trackers', 'transactions', 
-          'subscriptions', 'processed_subscriptions', 'processed_card_bills',
+          'accounts', 'categories', 'transactions', 
+          'subscriptions', 'processed_logs',
           'contacts', 'shared_splits', 'settlement_requests',
           'investments', 'investment_orders', 'budgets', 'savings_pots'
         ];
         
         const deletePromises = tables.map(table => 
-          supabase.from(table).delete().eq('user_id', userId)
+          supabase.from(table).delete().eq('user_id', userId).catch(err => {
+            console.log(`Failed to delete from ${table}:`, err);
+            return null;
+          })
         );
         
         await Promise.all(deletePromises);
@@ -349,7 +352,7 @@ export const syncActionToSupabase = async (action, userId) => {
           name: '',
           tier: 2,
           use_sub_categories: false
-        }).eq('id', userId);
+        }).eq('id', userId).catch(err => console.log('Failed to reset profile:', err));
         
         break;
       }
