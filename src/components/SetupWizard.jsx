@@ -51,6 +51,8 @@ export default function SetupWizard() {
   const [sipAmount, setSipAmount] = useState('');
   const [sipQuantity, setSipQuantity] = useState('');
   const [sipDate, setSipDate] = useState('');
+  const [invQuantity, setInvQuantity] = useState('');
+  const [invAvgPrice, setInvAvgPrice] = useState('');
 
   // Category Form State
   const [categories, setCategories] = useState([
@@ -76,7 +78,44 @@ export default function SetupWizard() {
     
     // Dispatch accounts if any
     accounts.forEach(acc => {
-      dispatch({ type: 'ADD_ACCOUNT', payload: acc });
+      if (acc.type === 'Stock' || acc.type === 'ETF' || acc.type === 'SIP') {
+        // Dispatch as Investment
+        const invType = acc.type === 'SIP' ? 'MF' : 'STOCK';
+        dispatch({
+          type: 'ADD_INVESTMENT',
+          payload: {
+            id: `inv-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            type: invType,
+            symbol: acc.name, // Will use name as symbol for simplicity in setup
+            name: acc.name,
+            quantity: Number(acc.invQuantity) || 0,
+            averageBuyPrice: Number(acc.invAvgPrice) || 0,
+            currentPrice: Number(acc.invAvgPrice) || 0,
+            lastUpdated: new Date().toISOString()
+          }
+        });
+
+        // If active SIP, also dispatch Subscription
+        if (acc.isActiveSIP) {
+          dispatch({
+            type: 'ADD_SUBSCRIPTION',
+            payload: {
+              id: `sub-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              name: `${acc.name} (${acc.type} SIP)`,
+              amount: acc.type === 'SIP' ? (parseFloat(acc.sipAmount) || 0) : ((parseFloat(acc.sipQuantity) || 0) * (parseFloat(acc.invAvgPrice) || 0)),
+              category: 'Investment',
+              date: parseInt(acc.sipDate, 10),
+              frequency: 'Monthly',
+              isSip: true,
+              sipType: invType,
+              sipSymbol: acc.name,
+              sipName: acc.name
+            }
+          });
+        }
+      } else {
+        dispatch({ type: 'ADD_ACCOUNT', payload: acc });
+      }
     });
 
     // Complete setup
@@ -101,6 +140,10 @@ export default function SetupWizard() {
       accountPayload.spent = parseFloat(newCardSpent) || 0;
       accountPayload.billingDate = parseInt(newCardBillingDate) || 1;
     } else if (accFormType === 'SIP' || accFormType === 'Stock' || accFormType === 'ETF') {
+      accountPayload.invQuantity = parseFloat(invQuantity) || 0;
+      accountPayload.invAvgPrice = parseFloat(invAvgPrice) || 0;
+      accountPayload.balance = (parseFloat(invQuantity) || 0) * (parseFloat(invAvgPrice) || 0); // For display in UI
+
       accountPayload.isActiveSIP = isActiveSIP;
       if (isActiveSIP) {
         if (accFormType === 'SIP') {
@@ -121,6 +164,8 @@ export default function SetupWizard() {
     setNewCardLimit('');
     setNewCardSpent('');
     setNewCardBillingDate('1');
+    setInvQuantity('');
+    setInvAvgPrice('');
   };
 
   const handleEditAccount = (acc) => {
@@ -134,6 +179,8 @@ export default function SetupWizard() {
       setNewCardBillingDate(acc.billingDate ? acc.billingDate.toString() : '1');
     }
     if (acc.type === 'SIP' || acc.type === 'Stock' || acc.type === 'ETF') {
+      setInvQuantity(acc.invQuantity || '');
+      setInvAvgPrice(acc.invAvgPrice || '');
       setIsActiveSIP(acc.isActiveSIP || false);
       setSipAmount(acc.sipAmount || '');
       setSipQuantity(acc.sipQuantity || '');
@@ -153,6 +200,8 @@ export default function SetupWizard() {
     setNewCardLimit('');
     setNewCardSpent('');
     setNewCardBillingDate('1');
+    setInvQuantity('');
+    setInvAvgPrice('');
     setIsActiveSIP(false);
     setSipAmount('');
     setSipQuantity('');
@@ -680,13 +729,22 @@ export default function SetupWizard() {
                     suggestions={accFormType === 'SIP' ? SIP_SUGGESTIONS : STOCK_SUGGESTIONS}
                   />
 
-                  <input 
-                    type="number" 
-                    className="form-control lg-r-md px-4 py-3" 
-                    placeholder="Current Value (₹)"
-                    value={newAccBalance}
-                    onChange={(e) => setNewAccBalance(e.target.value)}
-                  />
+                  <div className="flex gap-2">
+                    <input 
+                      type="number" 
+                      className="form-control lg-r-md px-4 py-3 w-full" 
+                      placeholder={accFormType === 'SIP' ? "Units" : "Quantity"}
+                      value={invQuantity}
+                      onChange={(e) => setInvQuantity(e.target.value)}
+                    />
+                    <input 
+                      type="number" 
+                      className="form-control lg-r-md px-4 py-3 w-full" 
+                      placeholder={accFormType === 'SIP' ? "Avg NAV (₹)" : "Avg Buy Price (₹)"}
+                      value={invAvgPrice}
+                      onChange={(e) => setInvAvgPrice(e.target.value)}
+                    />
+                  </div>
 
                   {(accFormType === 'SIP' || accFormType === 'Stock' || accFormType === 'ETF') && (
                     <div className="flex flex-col gap-3 mt-1">
