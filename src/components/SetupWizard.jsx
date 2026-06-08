@@ -9,6 +9,25 @@ import SIP_SUGGESTIONS from '../data/sips.json';
 
 const DEFAULT_ICONS = ['💰', '🍔', '🚗', '🏠', '🛍️', '🎓', '🏥', '✈️', '🎮', '📱', '💡', '🐶', '🎁', '☕', '👶', '🛒', '🍸', '🎬', '👗', '🎟️'];
 
+const FALLBACK_BANKS = [
+  'State Bank of India', 'HDFC Bank', 'ICICI Bank', 'Punjab National Bank',
+  'Axis Bank', 'Kotak Mahindra Bank', 'Bank of Baroda', 'Bank of India',
+  'Union Bank of India', 'Canara Bank', 'IndusInd Bank', 'Yes Bank',
+  'IDFC FIRST Bank', 'Federal Bank', 'South Indian Bank', 'RBL Bank',
+  'Bandhan Bank', 'IDBI Bank', 'UCO Bank', 'Central Bank of India',
+  'Indian Bank', 'Indian Overseas Bank', 'Punjab & Sind Bank', 'Bank of Maharashtra',
+  'AU Small Finance Bank', 'Equitas Small Finance Bank', 'Ujjivan Small Finance Bank',
+  'Jana Small Finance Bank', 'ESAF Small Finance Bank', 'Suryoday Small Finance Bank',
+];
+const FALLBACK_CARDS = [
+  'HDFC Bank Credit Card', 'SBI Card', 'ICICI Bank Credit Card',
+  'Axis Bank Credit Card', 'Kotak Credit Card', 'RBL Bank Credit Card',
+  'IndusInd Bank Credit Card', 'IDFC FIRST Credit Card',
+  'American Express', 'Standard Chartered Credit Card',
+  'Citi Credit Card', 'AU Small Finance Bank Credit Card',
+  'Amazon Pay ICICI Card', 'Flipkart Axis Bank Card',
+];
+
 export default function SetupWizard() {
   const { dispatch } = useFinance();
   const [step, setStep] = useState(1);
@@ -364,7 +383,10 @@ export default function SetupWizard() {
                   style={{ fontSize: '20px', padding: 'var(--s4)', background: 'rgba(255,255,255,0.03)' }}
                   placeholder="+91 99999 99999"
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '');
+                    if (val.length <= 10) setPhone(val);
+                  }}
                 />
               </div>
             </div>
@@ -501,13 +523,23 @@ export default function SetupWizard() {
                   <span className="caption t-tertiary lg-interactive cursor-pointer" onClick={handleCancelForm}>Cancel</span>
                 </div>
                 
-                <input 
-                  type="text" 
-                  className="form-control lg-r-md px-4 py-3" 
-                  placeholder={accFormType === 'Bank' ? "Bank Name (e.g. HDFC)" : accFormType === 'Card' ? "Card Name (e.g. SBI Pulse)" : "Wallet Name (e.g. Physical Cash)"}
-                  value={newAccName}
-                  onChange={(e) => setNewAccName(e.target.value)}
-                />
+                {accFormType === 'Bank' || accFormType === 'Card' ? (
+                  <AutocompleteInput 
+                    className="form-control lg-r-md px-4 py-3 w-full"
+                    placeholder={accFormType === 'Bank' ? "Bank Name (e.g. HDFC)" : "Card Name (e.g. SBI Pulse)"}
+                    value={newAccName}
+                    onChange={setNewAccName}
+                    suggestions={accFormType === 'Bank' ? FALLBACK_BANKS : FALLBACK_CARDS}
+                  />
+                ) : (
+                  <input 
+                    type="text" 
+                    className="form-control lg-r-md px-4 py-3" 
+                    placeholder="Wallet Name (e.g. Physical Cash)"
+                    value={newAccName}
+                    onChange={(e) => setNewAccName(e.target.value)}
+                  />
+                )}
                 
                 {(accFormType === 'Bank' || accFormType === 'Cash') && (
                   <input 
