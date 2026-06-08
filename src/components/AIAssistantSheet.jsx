@@ -29,51 +29,36 @@ export default function AIAssistantSheet({ isOpen, onClose, tabBarRef, shellRef 
     }
   }, [isOpen]);
 
-  // AI Logic Engine
-  const generateResponse = (query) => {
-    const q = query.toLowerCase();
-    const txs = state.transactions || [];
-    const expenses = txs.filter(t => t.type === 'Expense');
-    const income = txs.filter(t => t.type === 'Income');
-
-    if (q.includes('spend') || q.includes('spent') || q.includes('total expense')) {
-      const total = expenses.reduce((sum, t) => sum + Number(t.amount), 0);
-      return `You've spent a total of **${total.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 })}** across all your recorded transactions.`;
-    }
-    if (q.includes('highest') || q.includes('most') || q.includes('biggest') || q.includes('top')) {
-      if (!expenses.length) return "You haven't recorded any expenses yet!";
-      const cats = {};
-      expenses.forEach(t => { cats[t.category] = (cats[t.category] || 0) + Number(t.amount); });
-      const [top, val] = Object.entries(cats).sort(([,a],[,b]) => b-a)[0];
-      return `Your top spending category is **${top}** at **${Number(val).toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 })}** total.`;
-    }
-    if (q.includes('income') || q.includes('earn') || q.includes('salary')) {
-      const total = income.reduce((sum, t) => sum + Number(t.amount), 0);
-      return `Your total recorded income is **${total.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 })}**.`;
-    }
-    if (q.includes('analyz') || q.includes('summary') || q.includes('overview') || q.includes('report')) {
-      const totalExp = expenses.reduce((sum, t) => sum + Number(t.amount), 0);
-      const totalInc = income.reduce((sum, t) => sum + Number(t.amount), 0);
-      const diff = totalInc - totalExp;
-      const sign = diff >= 0 ? '+' : '';
-      return `Here's your financial snapshot:\n\n**Income:** ${totalInc.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 })}\n**Expenses:** ${totalExp.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 })}\n**Net Flow:** ${sign}${diff.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 })}`;
-    }
-    if (q.includes('transaction') || q.includes('entries') || q.includes('count') || q.includes('how many')) {
-      return `You have **${txs.length} transactions** recorded — ${expenses.length} expenses, ${income.length} income entries, and ${txs.filter(t => t.type === 'Investment').length} investments.`;
-    }
-    return "Try asking: *'How much did I spend?'*, *'What's my top category?'*, or *'Give me a summary.'*";
-  };
-
-  const handleSend = () => {
-    if (!input.trim()) return;
+  const handleSend = async () => {
+    if (!input.trim() || isTyping) return;
+    
     const userMessage = input.trim();
     setInput('');
     setMessages(prev => [...prev, { role: 'user', text: userMessage }]);
     setIsTyping(true);
-    setTimeout(() => {
-      setMessages(prev => [...prev, { role: 'ai', text: generateResponse(userMessage) }]);
+
+    try {
+      const response = await fetch('/api/ai-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: userMessage,
+          transactions: state.transactions || []
+        })
+      });
+
+      const data = await response.json();
+      
+      if (response.ok) {
+        setMessages(prev => [...prev, { role: 'ai', text: data.reply }]);
+      } else {
+        setMessages(prev => [...prev, { role: 'ai', text: `**Error:** ${data.error || 'Failed to connect'}` }]);
+      }
+    } catch (err) {
+      setMessages(prev => [...prev, { role: 'ai', text: `**Error:** Network request failed. Make sure you are online.` }]);
+    } finally {
       setIsTyping(false);
-    }, 1200);
+    }
   };
 
   if (phase === 'idle') return null;
