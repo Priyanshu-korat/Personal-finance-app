@@ -34,6 +34,7 @@ export default function Analytics() {
   const { state } = useFinance();
   const transactions = state.transactions || [];
   const accounts = state.accounts || [];
+  const investments = state.investments || [];
   
   const { requestGyroPermission, hasGyroPermission } = useTilt({ enabled: false });
   const [motionEnabled, setMotionEnabled] = useState(false);
@@ -116,6 +117,27 @@ export default function Analytics() {
 
   // ----- TREND CHART DATA ENGINE -----
   const trendData = useMemo(() => {
+    // ---- INVESTMENT TAB: build chart directly from investments state ----
+    if (activeTab === 'Investment') {
+      const invs = (investments || []).filter(inv => inv.averageBuyPrice && inv.quantity);
+      const totalInvested = invs.reduce((s, inv) => s + (parseFloat(inv.averageBuyPrice) || 0) * (parseFloat(inv.quantity) || 0), 0);
+      if (invs.length === 0) {
+        return { data: [0, 0], labels: ['Start', 'Now'], color: 'var(--c-gold)', totalInvested: 0 };
+      }
+      // Build a rising chart: start at 0, end at totalInvested
+      const sorted = [...invs].sort((a, b) => new Date(a.lastUpdated || 0) - new Date(b.lastUpdated || 0));
+      const dataPoints = [0];
+      const labels = ['Start'];
+      let running = 0;
+      sorted.forEach((inv, idx) => {
+        running += (parseFloat(inv.averageBuyPrice) || 0) * (parseFloat(inv.quantity) || 0);
+        dataPoints.push(running);
+        if (idx === Math.floor(sorted.length / 2)) labels.push(inv.name || inv.symbol || '');
+      });
+      labels.push('Now');
+      return { data: dataPoints, labels, color: 'var(--c-gold)', totalInvested };
+    }
+
     // 1. Calculate Initial Net Worth (at start of time) if needed
     let baseNetWorth = 0;
     accounts.forEach(acc => {
@@ -199,7 +221,8 @@ export default function Analytics() {
     if (activeTab === 'Investment') color = 'var(--c-gold)';
 
     return { data: dataPoints, labels, color };
-  }, [transactions, accounts, activeTab, timeRange, cutoffDate]);
+  }, [transactions, investments, accounts, activeTab, timeRange, cutoffDate]);
+
 
 
   // ----- DONUT / BREAKDOWN ENGINE -----
@@ -368,7 +391,9 @@ export default function Analytics() {
       }));
   }, [transactions, activeTab, cutoffDate, selectedCategory]);
 
-  const displayTotal = trendData.data[trendData.data.length - 1] || 0;
+  const displayTotal = activeTab === 'Investment'
+    ? (trendData.totalInvested ?? (trendData.data[trendData.data.length - 1] || 0))
+    : (trendData.data[trendData.data.length - 1] || 0);
   const momPct = comparisons.lastMonth ? ((comparisons.thisMonth - comparisons.lastMonth) / Math.abs(comparisons.lastMonth)) * 100 : 0;
   const yoyPct = comparisons.lastYear ? ((comparisons.thisYear - comparisons.lastYear) / Math.abs(comparisons.lastYear)) * 100 : 0;
 
