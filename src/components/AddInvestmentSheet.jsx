@@ -6,7 +6,7 @@ import STOCK_SUGGESTIONS from '../data/stocks.json';
 import SIP_SUGGESTIONS from '../data/sips.json';
 
 export default function AddInvestmentSheet({ isOpen, onClose, shellRef }) {
-  const { dispatch } = useFinance();
+  const { state, dispatch } = useFinance();
   const [type, setType] = useState('STOCK');
   const [entryMode, setEntryMode] = useState('PAST'); // 'PAST', 'NEW', 'SIP'
   const [symbol, setSymbol] = useState('');
