@@ -15,6 +15,9 @@ export default function AddInvestmentSheet({ isOpen, onClose, shellRef }) {
   const [averageBuyPrice, setAverageBuyPrice] = useState('');
   const [amount, setAmount] = useState('');
   const [sipDate, setSipDate] = useState('1');
+  const [accountId, setAccountId] = useState('');
+
+  const bankAccounts = state.accounts?.filter(a => a.type === 'Bank' || a.type === 'Cash') || [];
 
   const modeRef = useRef(null);
   const typeRef = useRef(null);
@@ -45,7 +48,10 @@ export default function AddInvestmentSheet({ isOpen, onClose, shellRef }) {
     const finalSymbol = symbol || name;
 
     if (entryMode === 'PAST') {
-      if (!quantity || !averageBuyPrice) return;
+      if (!quantity || !averageBuyPrice || !accountId) return;
+      
+      const totalAmount = Number(quantity) * Number(averageBuyPrice);
+      
       dispatch({
         type: 'ADD_INVESTMENT',
         payload: {
@@ -59,9 +65,34 @@ export default function AddInvestmentSheet({ isOpen, onClose, shellRef }) {
           lastUpdated: new Date().toISOString()
         }
       });
+
+      dispatch({
+        type: 'ADD_TRANSACTION',
+        payload: {
+          id: `tx-${Date.now()}`,
+          title: `Bought ${name.trim()}`,
+          amount: totalAmount,
+          type: 'Investment',
+          category: 'Stock / ETF',
+          accountId: accountId,
+          date: new Date().toISOString()
+        }
+      });
+
+      // Deduct from bank account
+      const targetAcc = bankAccounts.find(a => a.id === accountId);
+      if (targetAcc) {
+        dispatch({
+          type: 'UPDATE_ACCOUNT',
+          payload: { id: accountId, updates: { balance: Number(targetAcc.balance) - totalAmount } }
+        });
+      }
+
     } else if (entryMode === 'NEW') {
       if (type === 'STOCK') {
-        if (!quantity || !averageBuyPrice) return;
+        if (!quantity || !averageBuyPrice || !accountId) return;
+        const totalAmount = Number(quantity) * Number(averageBuyPrice);
+        
         dispatch({
           type: 'ADD_INVESTMENT',
           payload: {
@@ -75,8 +106,30 @@ export default function AddInvestmentSheet({ isOpen, onClose, shellRef }) {
             lastUpdated: new Date().toISOString()
           }
         });
+
+        dispatch({
+          type: 'ADD_TRANSACTION',
+          payload: {
+            id: `tx-${Date.now()}`,
+            title: `Bought ${name.trim()}`,
+            amount: totalAmount,
+            type: 'Investment',
+            category: 'Stock / ETF',
+            accountId: accountId,
+            date: new Date().toISOString()
+          }
+        });
+
+        const targetAcc = bankAccounts.find(a => a.id === accountId);
+        if (targetAcc) {
+          dispatch({
+            type: 'UPDATE_ACCOUNT',
+            payload: { id: accountId, updates: { balance: Number(targetAcc.balance) - totalAmount } }
+          });
+        }
       } else {
-        if (!amount) return;
+        if (!amount || !accountId) return;
+        
         dispatch({
           type: 'ADD_INVESTMENT_ORDER',
           payload: {
@@ -90,9 +143,30 @@ export default function AddInvestmentSheet({ isOpen, onClose, shellRef }) {
             status: 'PENDING'
           }
         });
+
+        dispatch({
+          type: 'ADD_TRANSACTION',
+          payload: {
+            id: `tx-${Date.now()}`,
+            title: `Invested in ${name.trim()}`,
+            amount: Number(amount),
+            type: 'Investment',
+            category: 'Mutual Fund',
+            accountId: accountId,
+            date: new Date().toISOString()
+          }
+        });
+
+        const targetAcc = bankAccounts.find(a => a.id === accountId);
+        if (targetAcc) {
+          dispatch({
+            type: 'UPDATE_ACCOUNT',
+            payload: { id: accountId, updates: { balance: Number(targetAcc.balance) - totalAmount } }
+          });
+        }
       }
     } else if (entryMode === 'SIP') {
-      if (!amount || !sipDate) return;
+      if (!amount || !sipDate || !accountId) return;
       dispatch({
         type: 'ADD_SUBSCRIPTION',
         payload: {
@@ -100,7 +174,7 @@ export default function AddInvestmentSheet({ isOpen, onClose, shellRef }) {
           name: `${name} (${type === 'STOCK' ? 'Stock SIP' : type === 'MF' ? 'MF SIP' : 'Bond SIP'})`,
           amount: parseFloat(amount),
           categoryId: 'Investment',
-          accountId: 'inv-sip-default',
+          accountId: accountId,
           date: parseInt(sipDate, 10),
           frequency: 'Monthly',
           isSip: true,
@@ -131,9 +205,9 @@ export default function AddInvestmentSheet({ isOpen, onClose, shellRef }) {
           <button 
             type="button"
             className="btn btn-ghost fw-bold" 
-            style={{ color: !name ? 'var(--t-tertiary)' : 'var(--c-blue-lt)' }}
+            style={{ color: (!name || !accountId) ? 'var(--t-tertiary)' : 'var(--c-blue-lt)' }}
             onClick={handleSubmit}
-            disabled={!name}
+            disabled={!name || !accountId}
           >
             Save
           </button>
@@ -287,6 +361,23 @@ export default function AddInvestmentSheet({ isOpen, onClose, shellRef }) {
                 </li>
               </>
             )}
+
+            <li>
+              <div className="flex items-center justify-between w-full">
+                <span className="subhead t-primary">Paid From</span>
+                <select 
+                  className="sheet-input" 
+                  style={{ textAlign: 'right', direction: 'rtl', paddingRight: '0' }}
+                  value={accountId}
+                  onChange={(e) => setAccountId(e.target.value)}
+                >
+                  <option value="" disabled>Select Account</option>
+                  {bankAccounts.map(a => (
+                    <option key={a.id} value={a.id}>{a.name} (₹{a.balance})</option>
+                  ))}
+                </select>
+              </div>
+            </li>
           </ul>
           
           {entryMode === 'NEW' && type === 'MF' && (
