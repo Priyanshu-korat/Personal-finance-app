@@ -63,7 +63,7 @@ export default function AddInvestmentSheet({ isOpen, onClose, shellRef }) {
           lastUpdated: new Date().toISOString()
         }
       });
-
+    } else if (entryMode === 'NEW') {
       if (type === 'STOCK') {
         if (!quantity || !averageBuyPrice || !accountId) return;
         const totalAmount = Number(quantity) * Number(averageBuyPrice);

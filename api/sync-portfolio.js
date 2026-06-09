@@ -16,28 +16,50 @@ export default async function handler(req, res) {
     // Deduplicate symbols
     const uniqueSymbols = [...new Set(symbols)];
 
-    // Automatically append .NS for Indian stocks if no suffix exists
-    const formattedSymbols = uniqueSymbols.map(sym => {
-      if (!sym.includes('.')) return `${sym}.NS`;
-      return sym;
-    });
-
-    // Fetch quotes individually to prevent one bad symbol from failing the whole batch
-    const results = await Promise.allSettled(
-      formattedSymbols.map(sym => yahooFinance.quote(sym))
-    );
+    const mfSymbols = uniqueSymbols.filter(sym => /^\d+$/.test(sym));
+    const stockSymbols = uniqueSymbols.filter(sym => !/^\d+$/.test(sym));
 
     const priceMap = {};
-    results.forEach(res => {
-      if (res.status === 'fulfilled' && res.value) {
-        const q = res.value;
-        // Map both the raw symbol (e.g. RELIANCE.NS) and the base symbol (RELIANCE)
-        const baseSymbol = q.symbol.split('.')[0];
-        const price = q.regularMarketPrice || q.navPrice || 0;
-        priceMap[baseSymbol] = price;
-        priceMap[q.symbol] = price;
-      }
-    });
+
+    // Fetch Mutual Funds from MFAPI
+    if (mfSymbols.length > 0) {
+      await Promise.allSettled(
+        mfSymbols.map(async (sym) => {
+          try {
+            const res = await fetch(`https://api.mfapi.in/mf/${sym}`);
+            const data = await res.json();
+            if (data && data.data && data.data.length > 0) {
+              priceMap[sym] = parseFloat(data.data[0].nav);
+            }
+          } catch (e) {
+            console.error(`MFAPI failed for ${sym}`, e);
+          }
+        })
+      );
+    }
+
+    // Fetch Stocks from Yahoo Finance
+    if (stockSymbols.length > 0) {
+      // Automatically append .NS for Indian stocks if no suffix exists
+      const formattedSymbols = stockSymbols.map(sym => {
+        if (!sym.includes('.')) return `${sym}.NS`;
+        return sym;
+      });
+
+      const results = await Promise.allSettled(
+        formattedSymbols.map(sym => yahooFinance.quote(sym))
+      );
+
+      results.forEach(res => {
+        if (res.status === 'fulfilled' && res.value) {
+          const q = res.value;
+          const baseSymbol = q.symbol.split('.')[0];
+          const price = q.regularMarketPrice || q.navPrice || 0;
+          priceMap[baseSymbol] = price;
+          priceMap[q.symbol] = price;
+        }
+      });
+    }
 
     return res.status(200).json({ prices: priceMap });
   } catch (error) {
