@@ -321,7 +321,7 @@ export default function PortfolioWidget() {
       )}
 
       {/* Sheets */}
-      {isAdding && <AddInvestmentSheet onClose={() => setIsAdding(false)} />}
+      {isAdding && <AddInvestmentSheet isOpen={true} onClose={() => setIsAdding(false)} />}
       {settlingInvestment && (
         <SettleInvestmentSheet 
           investment={settlingInvestment} 
