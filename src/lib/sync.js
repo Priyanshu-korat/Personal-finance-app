@@ -286,6 +286,11 @@ export const syncActionToSupabase = async (action, userId) => {
         break;
       }
 
+      case 'DELETE_INVESTMENT': {
+        await supabase.from('investments').delete().eq('id', action.payload).eq('user_id', userId).then(handleSupabaseResponse);
+        break;
+      }
+
       case 'UPDATE_INVESTMENT_PRICES': {
         const promises = action.payload.map(inv => 
           supabase.from('investments').update({ current_price: inv.currentPrice, last_updated: new Date().toISOString() }).eq('id', inv.id).eq('user_id', userId)
