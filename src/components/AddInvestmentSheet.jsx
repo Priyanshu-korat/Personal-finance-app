@@ -48,9 +48,7 @@ export default function AddInvestmentSheet({ isOpen, onClose, shellRef }) {
     const finalSymbol = symbol || name;
 
     if (entryMode === 'PAST') {
-      if (!quantity || !averageBuyPrice || !accountId) return;
-      
-      const totalAmount = Number(quantity) * Number(averageBuyPrice);
+      if (!quantity || !averageBuyPrice) return;
       
       dispatch({
         type: 'ADD_INVESTMENT',
@@ -66,29 +64,6 @@ export default function AddInvestmentSheet({ isOpen, onClose, shellRef }) {
         }
       });
 
-      dispatch({
-        type: 'ADD_TRANSACTION',
-        payload: {
-          id: `tx-${Date.now()}`,
-          title: `Bought ${name.trim()}`,
-          amount: totalAmount,
-          type: 'Investment',
-          category: 'Stock / ETF',
-          accountId: accountId,
-          date: new Date().toISOString()
-        }
-      });
-
-      // Deduct from bank account
-      const targetAcc = bankAccounts.find(a => a.id === accountId);
-      if (targetAcc) {
-        dispatch({
-          type: 'UPDATE_ACCOUNT',
-          payload: { id: accountId, updates: { balance: Number(targetAcc.balance) - totalAmount } }
-        });
-      }
-
-    } else if (entryMode === 'NEW') {
       if (type === 'STOCK') {
         if (!quantity || !averageBuyPrice || !accountId) return;
         const totalAmount = Number(quantity) * Number(averageBuyPrice);
@@ -205,9 +180,9 @@ export default function AddInvestmentSheet({ isOpen, onClose, shellRef }) {
           <button 
             type="button"
             className="btn btn-ghost fw-bold" 
-            style={{ color: (!name || !accountId) ? 'var(--t-tertiary)' : 'var(--c-blue-lt)' }}
+            style={{ color: (!name || (entryMode !== 'PAST' && !accountId)) ? 'var(--t-tertiary)' : 'var(--c-blue-lt)' }}
             onClick={handleSubmit}
-            disabled={!name || !accountId}
+            disabled={!name || (entryMode !== 'PAST' && !accountId)}
           >
             Save
           </button>
@@ -362,22 +337,24 @@ export default function AddInvestmentSheet({ isOpen, onClose, shellRef }) {
               </>
             )}
 
-            <li>
-              <div className="flex items-center justify-between w-full">
-                <span className="subhead t-primary">Paid From</span>
-                <select 
-                  className="sheet-input" 
-                  style={{ textAlign: 'right', direction: 'rtl', paddingRight: '0' }}
-                  value={accountId}
-                  onChange={(e) => setAccountId(e.target.value)}
-                >
-                  <option value="" disabled>Select Account</option>
-                  {bankAccounts.map(a => (
-                    <option key={a.id} value={a.id}>{a.name} (₹{a.balance})</option>
-                  ))}
-                </select>
-              </div>
-            </li>
+            {entryMode !== 'PAST' && (
+              <li>
+                <div className="flex items-center justify-between w-full">
+                  <span className="subhead t-primary">Paid From</span>
+                  <select 
+                    className="sheet-input" 
+                    style={{ textAlign: 'right', direction: 'rtl', paddingRight: '0' }}
+                    value={accountId}
+                    onChange={(e) => setAccountId(e.target.value)}
+                  >
+                    <option value="" disabled>Select Account</option>
+                    {bankAccounts.map(a => (
+                      <option key={a.id} value={a.id}>{a.name} (₹{a.balance})</option>
+                    ))}
+                  </select>
+                </div>
+              </li>
+            )}
           </ul>
           
           {entryMode === 'NEW' && type === 'MF' && (
