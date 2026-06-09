@@ -117,6 +117,15 @@ export default function PortfolioWidget() {
   };
 
   React.useEffect(() => {
+    // Sync on mount
+    let mounted = true;
+    if (investments.length > 0 && !isOffline) {
+      handleSync();
+    }
+    return () => { mounted = false; };
+  }, []); // Run once on mount
+
+  React.useEffect(() => {
     if (investments.length > prevInvLengthRef.current) {
       // A new investment was added! Automatically sync prices for ALL investments immediately
       handleSync();
