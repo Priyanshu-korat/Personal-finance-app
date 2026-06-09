@@ -18,7 +18,30 @@ export default async function handler(req, res) {
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    
+    // Dynamically select an available model
+    let modelName = "gemini-1.5-flash";
+    try {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+      const data = await response.json();
+      if (data.models && data.models.length > 0) {
+        const validModels = data.models.filter(m => 
+          m.supportedGenerationMethods.includes('generateContent') && 
+          m.name.includes('gemini')
+        );
+        // Prefer 1.5-flash, then 1.5-pro, then whatever is available
+        const preferred = validModels.find(m => m.name.includes('1.5-flash'))
+                       || validModels.find(m => m.name.includes('1.5-pro'))
+                       || validModels[0];
+        if (preferred) {
+          modelName = preferred.name.replace('models/', '');
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to fetch models list, using fallback', e);
+    }
+
+    const model = genAI.getGenerativeModel({ model: modelName });
 
     const systemPrompt = `You are an elite, highly intelligent financial advisor AI.
 Your user's name is ${profile?.name || 'User'}.
