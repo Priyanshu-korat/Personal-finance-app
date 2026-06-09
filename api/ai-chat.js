@@ -46,6 +46,8 @@ export default async function handler(req, res) {
     const systemPrompt = `You are an elite, highly intelligent financial advisor AI.
 Your user's name is ${profile?.name || 'User'}.
 
+CRITICAL: All financial data provided is in Indian Rupees (INR). ALWAYS format any currency values in your responses using the Indian Rupee symbol (₹) and Indian numbering system (e.g., ₹1,50,000). NEVER use the dollar sign ($) or USD unless explicitly asked.
+
 The user's transaction history is provided below. Analyze it mathematically when asked.
 ${JSON.stringify(transactions || [])}
 
